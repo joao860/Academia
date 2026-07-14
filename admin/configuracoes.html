@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurações — Admin Crossbox</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar"><div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div></div>
+    <div class="content" style="max-width:640px">
+
+      <div class="card" style="margin-bottom:24px">
+        <h3 class="h-display" style="font-size:16px;margin-bottom:18px">Identidade da academia</h3>
+        <div class="field"><label>Nome da academia</label><input type="text" value="Crossbox"></div>
+        <div class="field"><label>Cidade</label><input type="text" value="Campo Grande, MS"></div>
+        <div class="field"><label>Cor primária da marca</label>
+          <div class="flex items-center gap-12">
+            <input type="color" value="#FF4321" style="width:52px;height:40px;padding:2px;border-radius:8px">
+            <span class="text-faint mono" style="font-size:12.5px">Usada em botões, badges e destaques da sua landing page</span>
+          </div>
+        </div>
+        <button class="btn btn-primary">Salvar</button>
+      </div>
+
+      <div class="card" style="margin-bottom:24px">
+        <h3 class="h-display" style="font-size:16px;margin-bottom:10px">Plano e cobrança</h3>
+        <p class="text-dim" style="font-size:13.5px;margin-bottom:16px">Plano Studio · até 2 campeonatos ativos simultaneamente.</p>
+        <button class="btn btn-ghost btn-sm">Gerenciar assinatura</button>
+      </div>
+
+      <div class="card">
+        <h3 class="h-display" style="font-size:16px;margin-bottom:10px">Equipe administrativa</h3>
+        <div class="flex items-center justify-between" style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <span>Camila Duarte — camila@crossbox.com</span><span class="badge badge-success">Dono</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:14px">+ Convidar administrador</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script src="../assets/js/mock-data.js"></script>
+<script src="../assets/js/shell.js"></script>
+<script>renderSidebar('admin','configuracoes'); renderTopbar('Configurações','Identidade e conta da academia');</script>
+</body>
+</html>

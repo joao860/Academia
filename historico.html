@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histórico — Crossbox</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar"><div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div></div>
+    <div class="content">
+      <p class="text-dim" style="margin-bottom:24px;max-width:560px">Sua conta é permanente — todo o seu histórico na Crossbox fica salvo aqui, edição após edição.</p>
+      <div class="grid g-2" id="hist-grid"></div>
+      <p class="text-faint" id="hist-vazio" style="display:none">Você ainda não competiu em nenhum campeonato.</p>
+    </div>
+  </div>
+</div>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script src="assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('atleta', 'login.html');
+const usuario = arenaUsuarioAtual();
+renderSidebar('atleta','historico');
+renderTopbar('Histórico', 'Todos os campeonatos que você já disputou');
+
+const historico = usuario.historico || [];
+if(!historico.length){
+  document.getElementById('hist-vazio').style.display = 'block';
+} else {
+  document.getElementById('hist-grid').innerHTML = historico.map(h=>`
+    <div class="card">
+      <div class="flex justify-between items-center" style="margin-bottom:14px">
+        <h3 class="h-display" style="font-size:18px">${h.campeonato}</h3>
+        <span class="badge ${h.posicao && h.posicao.startsWith('1')?'badge-success':'badge-muted'}">${h.posicao}</span>
+      </div>
+      <div class="text-dim" style="font-size:14px;margin-bottom:6px">Equipe: <strong>${h.equipe}</strong></div>
+      <div class="text-dim" style="font-size:14px;margin-bottom:16px">Categoria: <strong>${h.categoria}</strong></div>
+      <a href="ranking-completo.html" class="btn btn-ghost btn-sm">Ver ranking daquela edição</a>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>

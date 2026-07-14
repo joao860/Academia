@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edições anteriores — Crossbox</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<nav class="nav"><div class="wrap nav-inner">
+  <a href="index.html" class="brand"><span class="brand-mark">C</span> Crossbox</a>
+  <a href="index.html" class="btn btn-ghost btn-sm">← Voltar</a>
+</div></nav>
+<section class="section-tight">
+  <div class="wrap">
+    <span class="eyebrow">Histórico</span>
+    <h1 class="h-display" style="margin:10px 0 28px">Edições anteriores</h1>
+    <div class="grid g-2" id="camp-grid"></div>
+    <p class="text-faint" id="camp-vazio" style="display:none">Nenhuma edição arquivada ainda — esta é a primeira temporada da Crossbox na plataforma.</p>
+  </div>
+</section>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script>
+const arquivados = arenaLoad('campeonatos_arquivados', []);
+document.getElementById('camp-vazio').style.display = arquivados.length ? 'none' : 'block';
+document.getElementById('camp-grid').innerHTML = arquivados.slice().reverse().map(a=>`
+  <div class="card">
+    <div class="flex justify-between items-center" style="margin-bottom:14px">
+      <h3 class="h-display" style="font-size:20px">${a.campeonato.nome||'Campeonato'}</h3>
+      <span class="badge badge-muted">${a.arquivadoEm}</span>
+    </div>
+    <div class="grid g-3" style="margin-bottom:18px">
+      <div><div class="text-faint" style="font-size:11.5px">Equipes</div><div style="font-weight:700;font-size:18px">${a.equipes.length}</div></div>
+      <div><div class="text-faint" style="font-size:11.5px">Atletas</div><div style="font-weight:700;font-size:18px">${a.equipes.reduce((n,e)=>n+e.membros.length,0)}</div></div>
+      <div><div class="text-faint" style="font-size:11.5px">Categorias</div><div style="font-weight:700;font-size:14px">${a.categorias.length}</div></div>
+    </div>
+    <a href="ranking-completo.html" class="btn btn-ghost btn-sm">Ver ranking desta edição</a>
+  </div>`).join('');
+</script>
+</body>
+</html>

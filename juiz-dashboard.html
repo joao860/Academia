@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do juiz — Crossbox</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .timer-display{font-family:var(--font-mono);font-size:64px;font-weight:700;text-align:center;letter-spacing:.02em;}
+  @media (max-width:600px){.timer-display{font-size:44px;}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      <span class="badge badge-live" id="topo-badge">Painel do juiz</span>
+    </div>
+    <div class="content">
+
+      <!-- estado: nenhuma equipe atribuída -->
+      <div class="card" id="sem-equipe" style="display:none;text-align:center;padding:56px 24px">
+        <h3 class="h-display" style="font-size:20px;margin-bottom:10px">Nenhuma equipe atribuída a você ainda</h3>
+        <p class="text-dim">Assim que o administrador te atribuir uma equipe para julgar, o painel de pontuação aparece aqui.</p>
+      </div>
+
+      <div class="grid" id="painel-real" style="grid-template-columns:.9fr 1.3fr;gap:24px;display:none">
+        <div class="card">
+          <span class="eyebrow">Equipe sob sua responsabilidade</span>
+          <h2 class="h-display" style="margin:12px 0 4px;font-size:26px" id="eq-nome">—</h2>
+          <span class="badge badge-muted" id="eq-categoria">—</span>
+          <hr class="divider" style="margin:18px 0">
+          <div class="text-dim" style="font-size:13px;margin-bottom:6px">Prova atual</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:14px" id="prova-nome">Nenhuma prova configurada ainda</div>
+          <div class="text-dim" style="font-size:13px;margin-bottom:6px">Arena</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:14px" id="prova-arena">—</div>
+          <div class="text-dim" style="font-size:13px;margin-bottom:6px">Time cap</div>
+          <div style="font-weight:700;font-size:14px" id="prova-timecap">—</div>
+        </div>
+
+        <div class="card">
+          <div style="text-align:center;margin-bottom:20px">
+            <span class="text-faint mono" style="font-size:12px;text-transform:uppercase;letter-spacing:.1em">Cronômetro</span>
+            <div class="timer-display mono" id="timer">00:00</div>
+            <div class="flex gap-8" style="justify-content:center;margin-top:10px">
+              <button class="btn btn-ghost btn-sm" onclick="toggleTimer()" id="timer-btn">Iniciar</button>
+              <button class="btn btn-ghost btn-sm" onclick="resetTimer()">Zerar</button>
+            </div>
+          </div>
+          <hr class="divider" style="margin:18px 0">
+          <h4 style="font-size:14px;margin-bottom:14px">Registrar resultado</h4>
+          <div class="grid g-2">
+            <div class="field"><label>Tempo final (mm:ss)</label><input type="text" id="res-tempo" placeholder="08:41"></div>
+            <div class="field"><label>Repetições completas</label><input type="text" id="res-reps" placeholder="170/170"></div>
+          </div>
+          <div class="field"><label>Penalidades (segundos)</label><input type="text" id="res-penalidade" placeholder="0" value="0"></div>
+          <div class="field"><label>Observações</label><textarea id="res-obs" rows="2" placeholder="Alguma ocorrência durante a prova?"></textarea></div>
+          <div class="flex gap-12">
+            <button class="btn btn-ghost" onclick="mostrarToast('Rascunho salvo.')">Salvar rascunho</button>
+            <button class="btn btn-primary" style="flex:1" onclick="finalizarProva()">Finalizar prova</button>
+          </div>
+          <p class="text-faint" style="font-size:12px;margin-top:14px" id="status-msg">Depois de finalizado, o resultado fica <strong>Pendente</strong> até a aprovação do administrador.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"><span>✅</span><span id="toast-msg"></span></div>
+
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script src="assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('juiz', 'juiz-login.html');
+const juiz = arenaUsuarioAtual();
+renderSidebar('juiz','painel');
+
+const params = new URLSearchParams(window.location.search);
+const equipeIdParam = params.get('equipe');
+const todasEquipes = arenaLoad('equipes', []);
+const minhas = todasEquipes.filter(e=>(juiz.equipesIds||[]).includes(e.id));
+const equipe = equipeIdParam ? minhas.find(e=>e.id===equipeIdParam) : minhas[0];
+
+if(!equipe){
+  document.getElementById('sem-equipe').style.display = 'block';
+  renderTopbar('Painel de pontuação', 'Nenhuma equipe atribuída');
+} else {
+  document.getElementById('painel-real').style.display = 'grid';
+  renderTopbar('Painel de pontuação', equipe.nome + ' · ' + equipe.categoria);
+  document.getElementById('eq-nome').textContent = equipe.nome;
+  document.getElementById('eq-categoria').textContent = equipe.categoria;
+
+  const provas = arenaLoad('provas', []);
+  const prova = provas.find(p=>(p.categorias||p.cats||[]).includes(equipe.categoria)) || null;
+  if(prova){
+    document.getElementById('prova-nome').textContent = prova.nome;
+    document.getElementById('prova-arena').textContent = prova.arena || '—';
+    document.getElementById('prova-timecap').textContent = prova.timecap || prova.timeCap || '—';
+  }
+}
+
+let seconds = 0, running = false;
+setInterval(()=>{
+  if(!running) return;
+  seconds++;
+  const m = String(Math.floor(seconds/60)).padStart(2,'0'), s = String(seconds%60).padStart(2,'0');
+  document.getElementById('timer').textContent = m+':'+s;
+}, 1000);
+function toggleTimer(){ running = !running; document.getElementById('timer-btn').textContent = running ? 'Pausar' : 'Retomar'; }
+function resetTimer(){ seconds = 0; running = false; document.getElementById('timer').textContent='00:00'; document.getElementById('timer-btn').textContent='Iniciar'; }
+
+function finalizarProva(){
+  if(!equipe) return;
+  arenaEnviarResultado({
+    equipeId: equipe.id, equipeNome: equipe.nome, categoria: equipe.categoria,
+    juizId: juiz.id, juizNome: juiz.nome,
+    tempo: document.getElementById('res-tempo').value,
+    repeticoes: document.getElementById('res-reps').value,
+    penalidade: document.getElementById('res-penalidade').value,
+    observacoes: document.getElementById('res-obs').value,
+  });
+  document.getElementById('status-msg').innerHTML = '<span style="color:var(--amber)">●</span> Resultado enviado. Status: <strong>Pendente de aprovação</strong>.';
+  mostrarToast('Resultado enviado para aprovação do administrador.');
+}
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena Games 2026 — Crossbox</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+/* ==========================================================================
+   TEMA CLARO — CROSSBOX (escopo exclusivo desta página)
+   Sobrescreve as variáveis de cor do design system só aqui. Nenhum outro
+   arquivo é alterado — login, área do atleta, juiz e admin continuam com
+   o tema padrão (isso será ajustado em etapas futuras).
+   ========================================================================== */
+:root{
+  --ink-950:#FFFFFF;
+  --ink-900:#F4F4F4;
+  --ink-850:#F4F4F4;
+  --surface:#FFFFFF;
+  --surface-hi:#F4F4F4;
+  --surface-hi-2:#DDDEDF;
+  --border:#DDDEDF;
+  --border-hi:#C7C8CA;
+
+  --chalk:#191919;
+  --chalk-dim:#363636;
+  --chalk-faint:#767676;
+
+  --flame:#196913;
+  --flame-hi:#21861A;
+  --flame-dim:#0F4A0C;
+
+  --amber:#B8790A;
+  --success:#1D6FD1;
+  --success-dim:#123F73;
+  --danger:#D63A3A;
+  --blue:#1D6FD1;
+
+  --shadow:0 16px 44px -20px rgba(25,25,25,.18);
+  --shadow-flame:0 14px 34px -14px rgba(25,105,19,.35);
+}
+
+/* ---- correções de contenção / overflow horizontal ---- */
+html, body{ overflow-x:hidden; width:100%; }
+.wrap, .hero-grid, .podium-row, .footer-grid{ min-width:0; }
+.grid > *, .hero-grid > *, .podium-row > *, .footer-grid > *, .flex > *{ min-width:0; }
+h1, h2, h3, p, span, a{ overflow-wrap:break-word; word-break:break-word; }
+img, .skeleton-img{ max-width:100%; }
+
+/* ---- padrão de fundo (linhas sutis escuras no lugar das brancas) ---- */
+.bg-grid{
+  background-image:
+    linear-gradient(rgba(25,25,25,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(25,25,25,.05) 1px, transparent 1px);
+}
+
+/* ---- nav em vidro claro ---- */
+.nav{ background:rgba(255,255,255,.86); border-bottom:1px solid var(--border); }
+
+/* ---- glow do hero em verde ---- */
+.hero-glow{ background:radial-gradient(circle, rgba(25,105,19,.14), transparent 70%); }
+
+/* ---- painel visual do hero, redesenhado pro claro ---- */
+.hero-visual{
+  background:
+    linear-gradient(160deg, rgba(25,105,19,.10), transparent 55%),
+    linear-gradient(0deg, #FFFFFF, transparent 45%),
+    linear-gradient(135deg, #F4F4F4, #FFFFFF);
+  border:1px solid var(--border);
+}
+.hero-visual::before{
+  background-image:radial-gradient(rgba(25,25,25,.07) 1px, transparent 1px);
+}
+.hero-visual-tag{ background:rgba(255,255,255,.9); border:1px solid var(--border-hi); }
+
+/* ---- cards com leve elevação (necessário no claro pra não sumir no fundo) ---- */
+.card{ box-shadow:0 1px 2px rgba(25,25,25,.04); }
+.skeleton-img{ border:1px solid var(--border); }
+
+/* ---- badges dependentes de rgba fixo ---- */
+.badge-live{ border-color:rgba(25,105,19,.35); background:rgba(25,105,19,.08); }
+
+/* ---- pódio: tom de destaque em verde + correção de sobreposição no mobile ---- */
+.podium-slot:nth-child(2){
+  background:linear-gradient(180deg, rgba(25,105,19,.08), var(--surface));
+  border-color:rgba(25,105,19,.35);
+}
+@media (max-width:700px){
+  .podium-slot:nth-child(2){ transform:none; margin-bottom:6px; }
+}
+
+/* ---- botões brancos usados sobre fundo verde (hero de segunda camada) ---- */
+.btn-white{ background:var(--chalk); color:#fff; }
+.btn-white:hover{ background:#000; }
+
+/* ==========================================================================
+   MENU MOBILE — o botão hambúrguer existia visualmente mas não abria nada;
+   agora funciona de verdade.
+   ========================================================================== */
+.nav-toggle{
+  width:40px;height:40px;border-radius:9px;border:1px solid var(--border-hi);
+  background:transparent;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:4px;flex:none;
+}
+.nav-toggle span{width:18px;height:2px;background:var(--chalk);border-radius:2px;transition:.2s;}
+.nav-toggle.open span:nth-child(1){transform:translateY(6px) rotate(45deg);}
+.nav-toggle.open span:nth-child(2){opacity:0;}
+.nav-toggle.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg);}
+@media (max-width:900px){ .nav-toggle{display:flex;} }
+
+.mobile-menu{
+  max-height:0; overflow:hidden; transition:max-height .25s ease;
+  border-bottom:1px solid transparent;
+}
+.mobile-menu.open{ max-height:420px; border-bottom-color:var(--border); }
+.mobile-menu-inner{ padding:8px 0 20px; display:flex; flex-direction:column; gap:2px; }
+.mobile-menu-inner a{
+  padding:12px 4px; font-size:15px; font-weight:600; color:var(--chalk-dim);
+  border-bottom:1px solid var(--border);
+}
+.mobile-menu-inner .mm-cta{ display:flex; gap:10px; padding-top:14px; }
+
+/* ==========================================================================
+   SIMULADOR — agora é uma gaveta encostada na borda esquerda: só uma
+   aba fica visível; clicar nela puxa o painel pra dentro da tela.
+   ========================================================================== */
+.state-drawer{
+  position:fixed; left:0; top:64%; transform:translate(-220px,-50%);
+  transition:transform .25s ease; z-index:200; display:flex; align-items:stretch;
+}
+.state-drawer.open{ transform:translate(0,-50%); }
+.state-drawer-panel{
+  width:220px; flex:none; background:var(--surface-hi); border:1px solid var(--border-hi); border-left:none;
+  border-radius:0 14px 14px 0; padding:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px;
+}
+.state-drawer-tab{
+  flex:none; width:34px; background:var(--flame); color:#fff; border:none;
+  border-radius:0 10px 10px 0; cursor:pointer; font-size:15px; writing-mode:vertical-rl; text-orientation:mixed;
+  padding:14px 0; font-weight:700; letter-spacing:.04em; box-shadow:var(--shadow);
+}
+.state-drawer-tab:hover{ background:var(--flame-hi); }
+@media (max-width:600px){ .state-drawer{ top:auto; bottom:16px; transform:translate(-220px,0); } .state-drawer.open{ transform:translate(0,0); } }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand"><span class="brand-mark">C</span> Crossbox</a>
+    <div class="nav-links">
+      <a href="#categorias">Categorias</a>
+      <a href="#hall-fama">Hall da Fama</a>
+      <a href="#galeria">Galeria</a>
+      <a href="#patrocinadores">Patrocinadores</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-cta">
+      <a href="login.html" class="btn btn-ghost btn-sm">Entrar</a>
+      <a href="cadastro.html" class="btn btn-primary btn-sm" id="nav-cta-btn">Inscrever-se</a>
+    </div>
+    <button class="nav-toggle" id="nav-toggle" onclick="toggleMobileMenu()" aria-label="Abrir menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="wrap mobile-menu-inner">
+      <a href="#categorias" onclick="toggleMobileMenu()">Categorias</a>
+      <a href="#hall-fama" onclick="toggleMobileMenu()">Hall da Fama</a>
+      <a href="#galeria" onclick="toggleMobileMenu()">Galeria</a>
+      <a href="#patrocinadores" onclick="toggleMobileMenu()">Patrocinadores</a>
+      <a href="#faq" onclick="toggleMobileMenu()">FAQ</a>
+      <div class="mm-cta">
+        <a href="login.html" class="btn btn-ghost btn-sm" style="flex:1;text-align:center">Entrar</a>
+        <a href="cadastro.html" class="btn btn-primary btn-sm" style="flex:1;text-align:center">Inscrever-se</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="wrap hero-grid" id="hero-conteudo-real">
+    <div class="reveal in">
+      <span class="eyebrow">Crossbox · <span class="js-academia-nome">Crossbox</span></span>
+      <h1 class="h-display" style="margin-top:14px" id="camp-nome-hero">Arena Games 2026</h1>
+      <span class="underline-bar"></span>
+      <div class="flex items-center gap-12" style="margin:22px 0;flex-wrap:wrap">
+        <span class="badge badge-amber" id="hero-status-badge">Inscrições abertas</span>
+        <span class="text-dim mono" style="font-size:13px" id="camp-data">15–16 ago 2026</span>
+      </div>
+      <p class="text-dim" id="camp-descricao" style="font-size:16.5px;max-width:520px;margin-bottom:10px">
+        O maior campeonato de CrossFit do Centro-Oeste.
+      </p>
+      <p class="text-faint mono" style="font-size:13px;margin-bottom:32px" id="camp-local">Arena Crossbox — Campo Grande, MS</p>
+
+      <div id="countdown-box" style="margin-bottom:34px">
+        <span id="countdown-label">até o fim das inscrições</span>
+        <div class="countdown" style="margin-top:10px">
+          <div class="box"><span class="num mono" id="cd-d">26</span><span class="lbl">dias</span></div>
+          <div class="box"><span class="num mono" id="cd-h">11</span><span class="lbl">horas</span></div>
+          <div class="box"><span class="num mono" id="cd-m">42</span><span class="lbl">min</span></div>
+          <div class="box"><span class="num mono" id="cd-s">08</span><span class="lbl">seg</span></div>
+        </div>
+      </div>
+
+      <div class="flex gap-16" style="flex-wrap:wrap">
+        <a href="cadastro.html" class="btn btn-primary" id="cta-primary">Inscrever minha equipe</a>
+        <a href="#categorias" class="btn btn-ghost">Ver categorias</a>
+      </div>
+
+      <div class="flex items-center gap-24" style="margin-top:38px;flex-wrap:wrap">
+        <div><span class="mono" style="font-size:24px;font-weight:700" id="stat-equipes">34</span><br><span class="text-faint" style="font-size:12.5px">equipes confirmadas</span></div>
+        <div><span class="mono" style="font-size:24px;font-weight:700" id="stat-atletas">146</span><br><span class="text-faint" style="font-size:12.5px">atletas inscritos</span></div>
+        <div><span class="mono" style="font-size:24px;font-weight:700" id="stat-vagas">74</span><br><span class="text-faint" style="font-size:12.5px">vagas restantes</span></div>
+      </div>
+    </div>
+
+    <div class="hero-visual reveal in">
+      <div class="hero-visual-tag">
+        <div class="flex items-center justify-between">
+          <span class="mono text-faint" style="font-size:11px;text-transform:uppercase">Próxima bateria</span>
+          <span class="badge badge-live">ao vivo</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:22px;text-transform:uppercase;margin-top:8px">Sprint Challenge</div>
+        <div class="text-dim mono" style="font-size:13px">Arena 1 · Categoria RX · 08:00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="landing-vazia" style="display:none;text-align:center;padding:60px 20px;">
+    <span class="eyebrow" style="justify-content:center;display:flex">Crossbox</span>
+    <h1 class="h-display" style="margin:14px 0 10px;font-size:clamp(28px,5vw,48px)">Nenhum campeonato publicado no momento</h1>
+    <p class="text-dim" style="max-width:480px;margin:0 auto 28px">Assim que a academia publicar um campeonato, ele aparece aqui automaticamente — inscrições, categorias, ranking e tudo mais, ao vivo.</p>
+    <a href="admin/login.html" class="btn btn-ghost">Sou administrador</a>
+  </div>
+</header>
+
+<!-- RANKING AO VIVO (durante o campeonato) -->
+<section class="section-tight" data-states="andamento">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Ranking parcial</span>
+        <h2 class="h-display" style="margin-top:10px">Acompanhe ao vivo</h2>
+      </div>
+      <a href="ranking-completo.html" class="btn btn-ghost btn-sm">Ver ranking completo</a>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <table class="table">
+        <thead><tr><th>#</th><th>Equipe</th><th>Categoria</th><th>Pontos</th></tr></thead>
+        <tbody id="ranking-live-body"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:40px">
+      <h3 class="h-display" style="margin-bottom:20px">Próximas baterias</h3>
+      <div id="baterias-list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PÓDIO (finalizado) -->
+<section class="section" data-states="finalizado">
+  <div class="wrap">
+    <div style="text-align:center;margin-bottom:48px">
+      <span class="eyebrow" style="justify-content:center">Campeonato finalizado</span>
+      <h2 class="h-display" style="margin-top:10px">Os campeões de 2026</h2>
+    </div>
+    <div class="podium-row">
+      <div class="podium-slot reveal in" id="podium-2"></div>
+      <div class="podium-slot reveal in" id="podium-1"></div>
+      <div class="podium-slot reveal in" id="podium-3"></div>
+    </div>
+    <div class="card" style="margin-top:40px;overflow-x:auto">
+      <table class="table">
+        <thead><tr><th>#</th><th>Equipe</th><th>Categoria</th><th>Pontos</th></tr></thead>
+        <tbody id="ranking-final-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORIAS -->
+<section class="section" id="categorias" data-states="pre_inscricao inscricoes_abertas inscricoes_encerradas andamento">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Categorias</span>
+        <h2 class="h-display" style="margin-top:10px">Escolha sua categoria</h2>
+      </div>
+      <p class="text-dim" style="max-width:360px">Categorias totalmente configuradas pela organização, com regras próprias de mínimo e máximo de atletas por equipe.</p>
+    </div>
+    <div class="grid g-3" id="categorias-grid"></div>
+  </div>
+</section>
+
+<!-- HALL DA FAMA -->
+<section class="section-tight" id="hall-fama">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Hall da Fama</span>
+        <h2 class="h-display" style="margin-top:10px">Campeões de cada edição</h2>
+      </div>
+    </div>
+    <div class="grid g-3" id="hall-grid"></div>
+  </div>
+</section>
+
+<!-- GALERIA -->
+<section class="section-tight" id="galeria">
+  <div class="wrap">
+    <span class="eyebrow">Galeria</span>
+    <h2 class="h-display" style="margin-top:10px;margin-bottom:28px">Melhores momentos</h2>
+    <div class="grid g-4" id="galeria-grid"></div>
+  </div>
+</section>
+
+<!-- PATROCINADORES -->
+<section class="section-tight" id="patrocinadores">
+  <div class="wrap">
+    <span class="eyebrow" style="justify-content:center;display:flex">Patrocinadores</span>
+    <h2 class="h-display" style="margin:10px 0 28px;text-align:center">Quem torna isso possível</h2>
+    <div class="grid g-3" id="sponsors-grid"></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="wrap" style="max-width:820px">
+    <span class="eyebrow">Perguntas frequentes</span>
+    <h2 class="h-display" style="margin:10px 0 32px">Tire suas dúvidas</h2>
+    <div id="faq-list" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="section-tight">
+  <div class="wrap">
+    <div class="card card-hi" style="text-align:center;padding:56px 32px">
+      <h2 class="h-display" style="font-size:clamp(26px,4vw,40px)">Pronto para competir?</h2>
+      <p class="text-dim" style="margin:14px 0 26px">Crie sua conta, monte sua equipe e garanta sua vaga no Arena Games 2026.</p>
+      <a href="cadastro.html" class="btn btn-primary">Criar minha conta</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <div>
+      <div class="brand" style="margin-bottom:14px"><span class="brand-mark">C</span> Crossbox</div>
+      <p class="text-faint" style="font-size:13.5px;max-width:280px">Plataforma de gestão de campeonatos de CrossFit. Do cadastro à premiação, tudo em um só lugar.</p>
+    </div>
+    <div>
+      <h4>Campeonato</h4>
+      <a href="#categorias">Categorias</a>
+      <a href="campeonatos-passados.html">Edições anteriores</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div>
+      <h4>Conta</h4>
+      <a href="login.html">Entrar</a>
+      <a href="cadastro.html">Criar conta</a>
+      <a href="juiz-login.html">Acesso do juiz</a>
+    </div>
+    <div>
+      <h4>Administração</h4>
+      <a href="admin/login.html">Painel do administrador</a>
+    </div>
+  </div>
+  <div class="wrap" style="margin-top:40px;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span class="text-faint" style="font-size:12.5px">© <span id="footer-year"></span> Crossbox — powered by Arena, a platform for CrossFit championships.</span>
+    <span class="text-faint mono" style="font-size:12.5px" id="camp-nome-footer"></span>
+  </div>
+</footer>
+
+<!-- DEMO STATE SWITCHER (apenas para apresentação do protótipo) -->
+<div class="state-drawer" id="state-drawer">
+  <div class="state-drawer-panel">
+    <span class="title" style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--chalk-faint);padding:0 4px 4px;display:block">Simulador · estado</span>
+    <button class="state-switch-btn" data-state="pre_inscricao" onclick="setEstado('pre_inscricao')">Em breve <span>①</span></button>
+    <button class="state-switch-btn" data-state="inscricoes_abertas" onclick="setEstado('inscricoes_abertas')">Inscrições abertas <span>②</span></button>
+    <button class="state-switch-btn" data-state="inscricoes_encerradas" onclick="setEstado('inscricoes_encerradas')">Inscrições encerradas <span>③</span></button>
+    <button class="state-switch-btn" data-state="andamento" onclick="setEstado('andamento')">Em andamento <span>④</span></button>
+    <button class="state-switch-btn" data-state="finalizado" onclick="setEstado('finalizado')">Finalizado <span>⑤</span></button>
+  </div>
+  <button class="state-drawer-tab" onclick="toggleDrawer()">SIMULADOR</button>
+</div>
+
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script src="assets/js/landing.js"></script>
+<script>
+function toggleMobileMenu(){
+  document.getElementById('nav-toggle').classList.toggle('open');
+  document.getElementById('mobile-menu').classList.toggle('open');
+}
+function toggleDrawer(){
+  document.getElementById('state-drawer').classList.toggle('open');
+}
+</script>
+</body>
+</html>

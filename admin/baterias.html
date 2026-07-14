@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baterias — Admin Crossbox</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      <div class="flex gap-8">
+        <button class="btn btn-ghost btn-sm" onclick="gerarAutomatico()">✨ Gerar automaticamente</button>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal-bat').classList.add('open')">+ Nova bateria</button>
+      </div>
+    </div>
+    <div class="content">
+      <div id="agenda"></div>
+      <p class="text-faint" id="agenda-vazia" style="display:none">Nenhuma bateria agendada ainda.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-bat">
+  <div class="modal">
+    <h3 class="h-display" style="font-size:20px;margin-bottom:18px">Nova bateria</h3>
+    <div class="field"><label>Prova</label><input type="text" id="m-prova" placeholder="Sprint Challenge"></div>
+    <div class="grid g-2">
+      <div class="field"><label>Horário</label><input type="time" id="m-hora" value="09:00"></div>
+      <div class="field"><label>Arena</label><input type="text" id="m-arena" placeholder="Arena 1"></div>
+    </div>
+    <div class="field"><label>Categoria</label><input type="text" id="m-cat" placeholder="RX"></div>
+    <div class="flex gap-12"><button class="btn btn-ghost" onclick="document.getElementById('modal-bat').classList.remove('open')">Cancelar</button><button class="btn btn-primary" style="flex:1" onclick="salvarBateria()">Agendar</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"><span>✅</span><span id="toast-msg"></span></div>
+
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/mock-data.js"></script>
+<script src="../assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('admin', 'login.html');
+renderSidebar('admin','baterias');
+const campeonato = arenaCampeonatoAtivo();
+renderTopbar('Baterias', campeonato ? campeonato.nome : 'Agenda do campeonato');
+
+function renderAgenda(){
+  const baterias = arenaListar('baterias').sort((a,b)=>(a.horario||'').localeCompare(b.horario||''));
+  document.getElementById('agenda-vazia').style.display = baterias.length ? 'none' : 'block';
+  document.getElementById('agenda').innerHTML = baterias.map(b=>`
+    <div class="card flex items-center justify-between" style="margin-bottom:14px">
+      <div class="flex items-center gap-24">
+        <div class="mono" style="font-size:24px;font-weight:700;color:var(--flame-hi);min-width:70px">${b.horario}</div>
+        <div>
+          <div style="font-weight:700">${b.prova}</div>
+          <div class="text-faint" style="font-size:12.5px">${b.arena} · ${b.categoria}</div>
+          <div class="flex gap-6" style="margin-top:8px;flex-wrap:wrap">${(b.equipes||[]).map(e=>`<span class="badge badge-muted">${e}</span>`).join('') || '<span class="text-faint" style="font-size:12px">Nenhuma equipe atribuída ainda</span>'}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="text-faint" style="font-size:11.5px;margin-bottom:6px">Juiz responsável</div>
+        <span class="badge ${b.juiz?'badge-success':'badge-muted'}">${b.juiz||'Não atribuído'}</span>
+        <div><span class="remove-x" style="cursor:pointer;color:var(--chalk-faint);font-size:12px" onclick="removerBateria('${b.id}')">remover</span></div>
+      </div>
+    </div>`).join('');
+}
+function salvarBateria(){
+  const prova = document.getElementById('m-prova').value.trim(); if(!prova) return;
+  arenaAdicionar('baterias', {
+    prova, horario:document.getElementById('m-hora').value, arena:document.getElementById('m-arena').value||'Arena 1',
+    categoria:document.getElementById('m-cat').value||'—', equipes:[], status:'agendada'
+  }, 'bateria');
+  document.getElementById('modal-bat').classList.remove('open');
+  document.getElementById('m-prova').value='';
+  renderAgenda();
+  mostrarToast('Bateria agendada.');
+}
+function removerBateria(id){ arenaRemover('baterias', id); renderAgenda(); }
+function gerarAutomatico(){
+  const r = arenaGerarBateriasAutomaticamente();
+  if(r.erro){ mostrarToast(r.erro); return; }
+  renderAgenda();
+  mostrarToast(r.geradas + ' baterias geradas automaticamente.');
+}
+function mostrarToast(msg){ const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+renderAgenda();
+</script>
+</body>
+</html>

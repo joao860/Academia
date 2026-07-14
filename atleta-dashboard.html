@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha área — Crossbox</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="flex items-center gap-12">
+        <button class="btn btn-ghost btn-sm" onclick="toggleSidebar()" style="display:none" id="burger">☰</button>
+        <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      </div>
+      <span class="badge badge-live">Arena Games 2026 · em andamento</span>
+    </div>
+
+    <div class="content">
+      <div class="card card-hi" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:28px">
+        <div>
+          <span class="eyebrow">Bem-vindo de volta</span>
+          <h2 class="h-display" style="margin-top:8px;font-size:28px" id="welcome-name"></h2>
+          <p class="text-dim" style="margin-top:6px">Você está inscrito na categoria <strong id="welcome-cat"></strong> pela equipe <strong id="welcome-team"></strong>.</p>
+        </div>
+        <a href="equipe.html" class="btn btn-primary">Ver minha equipe</a>
+      </div>
+
+      <div class="grid g-3" style="margin-bottom:32px">
+        <div class="stat-card"><div class="label">Status da inscrição</div><div class="value" id="dash-status-value" style="font-size:20px;color:var(--chalk-faint)">—</div></div>
+        <div class="stat-card"><div class="label">Próxima bateria</div><div class="value" id="dash-proxima-bateria" style="font-size:20px">—</div></div>
+        <div class="stat-card"><div class="label">Posição parcial</div><div class="value" id="dash-posicao" style="font-size:20px;color:var(--flame-hi)">—</div></div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1.3fr .9fr;gap:24px" id="dash-grid">
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:18px">Suas próximas baterias</h3>
+          <div id="minhas-baterias"></div>
+        </div>
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:18px">Histórico rápido</h3>
+          <div id="historico-mini"></div>
+          <a href="historico.html" class="btn btn-ghost btn-sm btn-block" style="margin-top:8px">Ver histórico completo</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script src="assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('atleta', 'login.html');
+const usuario = arenaUsuarioAtual();
+const equipe = arenaMinhaEquipe(usuario.id);
+const campeonato = arenaCampeonatoAtivo();
+
+renderSidebar('atleta','dashboard');
+renderTopbar('Visão geral', campeonato ? campeonato.nome : 'Nenhum campeonato ativo');
+
+document.getElementById('welcome-name').textContent = usuario.nome.split(' ')[0] + ', tudo pronto pra competir?';
+document.getElementById('welcome-cat').textContent = equipe ? equipe.categoria : '—';
+document.getElementById('welcome-team').textContent = equipe ? equipe.nome : 'nenhuma equipe ainda';
+
+// status/estatísticas do card superior
+const statusEl = document.querySelector('#dash-status-value');
+if(statusEl){
+  statusEl.textContent = equipe ? (equipe.status==='confirmada' ? 'Confirmada' : equipe.status==='aguardando_pagamento' ? 'Aguardando pagamento' : 'Montando equipe') : 'Sem inscrição';
+  statusEl.style.color = equipe && equipe.status==='confirmada' ? 'var(--success)' : 'var(--amber)';
+}
+
+// próximas baterias — filtra pelas baterias reais que envolvem a equipe do atleta
+const baterias = arenaLoad('baterias', []);
+const minhasBaterias = equipe ? baterias.filter(b=>(b.equipes||[]).includes(equipe.nome)) : [];
+document.getElementById('minhas-baterias').innerHTML = minhasBaterias.length ? minhasBaterias.map(b=>`
+  <div class="flex items-center justify-between" style="padding:12px 0;border-bottom:1px solid var(--border)">
+    <div class="flex items-center gap-16">
+      <div class="mono" style="font-size:18px;font-weight:700;color:var(--flame-hi);min-width:56px">${b.horario}</div>
+      <div><div style="font-weight:700;font-size:14px">${b.prova}</div><div class="text-faint" style="font-size:12px">${b.arena} · ${b.data||''}</div></div>
+    </div>
+    <span class="badge badge-muted">${b.status||'agendada'}</span>
+  </div>`).join('') : '<p class="text-faint">Nenhuma bateria agendada para sua equipe ainda.</p>';
+
+document.getElementById('dash-proxima-bateria').textContent = minhasBaterias.length ? (minhasBaterias[0].horario + ' · ' + minhasBaterias[0].arena) : 'Nenhuma agendada';
+document.getElementById('dash-posicao').textContent = (equipe && equipe.status==='competindo') ? 'Em disputa' : '—';
+
+// histórico real (começa vazio pra contas novas)
+const historico = usuario.historico || [];
+document.getElementById('historico-mini').innerHTML = historico.length ? historico.map(h=>`
+  <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+    <div style="font-weight:700;font-size:13.5px">${h.campeonato}</div>
+    <div class="text-faint" style="font-size:12px">${h.equipe} · ${h.categoria} · <span style="color:var(--flame-hi)">${h.posicao}</span></div>
+  </div>`).join('') : '<p class="text-faint">Você ainda não competiu em nenhum campeonato.</p>';
+</script>
+</body>
+</html>

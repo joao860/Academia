@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu perfil — Crossbox</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar"><div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div></div>
+    <div class="content" style="max-width:560px">
+      <div class="card">
+        <div class="flex items-center gap-16" style="margin-bottom:26px">
+          <div class="avatar" style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:22px;font-weight:700" id="perfil-avatar">—</div>
+          <div><strong style="font-size:18px" id="perfil-nome-topo">—</strong><div class="text-faint" style="font-size:13px" id="perfil-desde">—</div></div>
+        </div>
+        <div class="field"><label>Nome completo</label><input type="text" id="perfil-nome"></div>
+        <div class="field"><label>E-mail</label><input type="email" id="perfil-email"></div>
+        <p class="text-faint" id="perfil-msg" style="display:none;color:var(--success);font-size:13px;margin:-6px 0 14px">Alterações salvas.</p>
+        <button class="btn btn-primary" onclick="salvarPerfil()">Salvar alterações</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script src="assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('atleta', 'login.html');
+const usuario = arenaUsuarioAtual();
+renderSidebar('atleta','perfil');
+renderTopbar('Meu perfil','Informações da sua conta');
+
+document.getElementById('perfil-avatar').textContent = usuario.avatar;
+document.getElementById('perfil-nome-topo').textContent = usuario.nome;
+document.getElementById('perfil-desde').textContent = 'Conta permanente desde ' + (usuario.criadoEm || '—');
+document.getElementById('perfil-nome').value = usuario.nome;
+document.getElementById('perfil-email').value = usuario.email;
+
+function salvarPerfil(){
+  const nome = document.getElementById('perfil-nome').value.trim();
+  const email = document.getElementById('perfil-email').value.trim();
+  if(!nome || !email) return;
+  arenaAtualizarPerfil({nome, email, avatar:arenaIniciais(nome)});
+  document.getElementById('perfil-msg').style.display = 'block';
+  document.getElementById('perfil-avatar').textContent = arenaIniciais(nome);
+  document.getElementById('perfil-nome-topo').textContent = nome;
+  setTimeout(()=>document.getElementById('perfil-msg').style.display='none', 2500);
+}
+</script>
+</body>
+</html>

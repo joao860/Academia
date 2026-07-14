@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAQ — Admin Crossbox</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal-f').classList.add('open')">+ Nova pergunta</button>
+    </div>
+    <div class="content" style="max-width:720px">
+      <div id="faq-admin"></div>
+      <p class="text-faint" id="faq-vazio" style="display:none">Nenhuma pergunta cadastrada ainda.</p>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-f">
+  <div class="modal">
+    <h3 class="h-display" style="font-size:20px;margin-bottom:18px">Nova pergunta</h3>
+    <div class="field"><label>Pergunta</label><input type="text" id="m-p"></div>
+    <div class="field"><label>Resposta</label><textarea rows="3" id="m-r"></textarea></div>
+    <div class="flex gap-12"><button class="btn btn-ghost" onclick="document.getElementById('modal-f').classList.remove('open')">Cancelar</button><button class="btn btn-primary" style="flex:1" onclick="salvar()">Salvar</button></div>
+  </div>
+</div>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/mock-data.js"></script>
+<script src="../assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('admin', 'login.html');
+renderSidebar('admin','faq');
+renderTopbar('FAQ','Perguntas frequentes da landing page');
+
+function render(){
+  const faqs = arenaListar('faq');
+  document.getElementById('faq-vazio').style.display = faqs.length ? 'none' : 'block';
+  document.getElementById('faq-admin').innerHTML = faqs.map(f=>`
+    <div class="card" style="margin-bottom:12px">
+      <div class="flex justify-between items-start gap-12">
+        <div><strong style="font-size:14.5px">${f.p}</strong><p class="text-dim" style="font-size:13.5px;margin-top:8px">${f.r}</p></div>
+        <span style="cursor:pointer;color:var(--chalk-faint);font-weight:700" onclick="arenaRemover('faq','${f.id}');render()">✕</span>
+      </div>
+    </div>`).join('');
+}
+function salvar(){
+  const p = document.getElementById('m-p').value.trim(); if(!p) return;
+  arenaAdicionar('faq', {p, r:document.getElementById('m-r').value}, 'faq');
+  document.getElementById('modal-f').classList.remove('open');
+  document.getElementById('m-p').value=''; document.getElementById('m-r').value='';
+  render();
+}
+render();
+</script>
+</body>
+</html>

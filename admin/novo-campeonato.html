@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Novo campeonato — Admin Crossbox</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  .wiz-steps{display:flex;overflow-x:auto;gap:4px;margin-bottom:28px;padding-bottom:4px;}
+  .wiz-steps .ws{flex:none;padding:9px 14px;border-radius:8px;font-size:12.5px;font-weight:700;color:var(--chalk-faint);border:1px solid var(--border-hi);white-space:nowrap;cursor:pointer;}
+  .wiz-steps .ws.active{background:var(--flame);border-color:var(--flame);color:#fff;}
+  .wiz-steps .ws.done{color:var(--success);border-color:var(--success-dim);}
+  .wpane{display:none;} .wpane.active{display:block;}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:100px;padding:8px 14px;font-size:13px;cursor:pointer;}
+  .chip.selected{border-color:var(--flame);background:rgba(var(--flame-rgb),.1);color:var(--flame-hi);}
+  .remove-x{color:var(--chalk-faint);cursor:pointer;font-weight:700;}
+  .modelo-card{border:1px solid var(--border-hi);border-radius:10px;padding:12px 14px;cursor:pointer;transition:.15s;}
+  .modelo-card:hover{border-color:var(--flame);background:rgba(var(--flame-rgb),.05);}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      <a href="campeonatos.html" class="btn btn-ghost btn-sm">Sair (o que já foi preenchido fica salvo)</a>
+    </div>
+    <div class="content">
+
+      <div class="wiz-steps" id="wiz-steps"></div>
+
+      <!-- 1. Informações básicas -->
+      <div class="wpane active" data-p="0">
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:20px">Informações básicas</h3>
+          <div class="field"><label>Nome do campeonato</label><input type="text" id="f-nome" placeholder="Ex: Arena Games 2026"></div>
+          <div class="field"><label>Descrição</label><textarea rows="3" id="f-desc" placeholder="Uma frase que descreva o campeonato"></textarea></div>
+          <div class="grid g-2">
+            <div class="field"><label>Formato</label>
+              <select id="f-formato"><option>Individual e Equipes</option><option>Somente Individual</option><option>Somente Equipes</option></select>
+            </div>
+            <div class="field"><label>Local</label><input type="text" id="f-local" placeholder="Nome e endereço da arena"></div>
+          </div>
+          <div class="grid g-2">
+            <div class="field"><label>Início das inscrições</label><input type="date" id="f-data-ini-insc"></div>
+            <div class="field"><label>Fim das inscrições</label><input type="date" id="f-data-fim-insc"></div>
+          </div>
+          <div class="grid g-2">
+            <div class="field"><label>Data do evento (início)</label><input type="date" id="f-data-ini-evento"></div>
+            <div class="field"><label>Data do evento (fim)</label><input type="date" id="f-data-fim-evento"></div>
+          </div>
+          <div class="grid g-2">
+            <div class="field"><label>Valor da inscrição individual (R$)</label><input type="number" id="f-preco-ind" placeholder="180"></div>
+            <div class="field"><label>Valor da inscrição por equipe (R$)</label><input type="number" id="f-preco-eq" placeholder="480"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Categorias -->
+      <div class="wpane" data-p="1">
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:6px">Categorias</h3>
+          <p class="text-dim" style="font-size:13.5px;margin-bottom:20px">Crie quantas categorias quiser — cada uma com suas próprias regras de equipe.</p>
+          <div id="cat-list" style="margin-bottom:20px"></div>
+          <div class="grid" style="grid-template-columns:1.4fr .7fr .7fr auto;gap:10px;align-items:end">
+            <div class="field" style="margin-bottom:0"><label>Nome da categoria</label><input type="text" id="new-cat-nome" placeholder="Ex: Iniciante"></div>
+            <div class="field" style="margin-bottom:0"><label>Mín. atletas</label><input type="number" id="new-cat-min" value="1"></div>
+            <div class="field" style="margin-bottom:0"><label>Máx. atletas</label><input type="number" id="new-cat-max" value="3"></div>
+            <button class="btn btn-primary" onclick="addCategoria()">Adicionar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Exercícios (catálogo da ACADEMIA, permanente) -->
+      <div class="wpane" data-p="2">
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:6px">Catálogo de exercícios da academia</h3>
+          <p class="text-dim" style="font-size:13.5px;margin-bottom:20px">Este catálogo é da Crossbox, não deste campeonato — uma vez cadastrado, fica disponível pra sempre, em qualquer campeonato futuro.</p>
+          <div class="flex" style="flex-wrap:wrap;gap:10px;margin-bottom:24px" id="ex-chips"></div>
+          <hr class="divider" style="margin-bottom:20px">
+          <h4 style="font-size:14px;margin-bottom:14px">Cadastrar novo exercício no catálogo</h4>
+          <div class="grid" style="grid-template-columns:1.4fr .8fr 1.4fr auto;gap:10px;align-items:end">
+            <div class="field" style="margin-bottom:0"><label>Nome</label><input type="text" id="new-ex-nome" placeholder="Ex: Snatch"></div>
+            <div class="field" style="margin-bottom:0"><label>Tipo</label><input type="text" id="new-ex-tipo" placeholder="Levantamento"></div>
+            <div class="field" style="margin-bottom:0"><label>Métricas (separadas por vírgula)</label><input type="text" id="new-ex-metricas" placeholder="Peso (kg), Repetições"></div>
+            <button class="btn btn-ghost" onclick="addExercicio()">Cadastrar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Provas (builder visual) -->
+      <div class="wpane" data-p="3">
+        <div class="card" style="margin-bottom:20px">
+          <h4 style="font-size:13px;margin-bottom:12px">Ou comece a partir de um modelo pronto</h4>
+          <div class="grid g-3" id="modelos-prova"></div>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:24px">
+          <div class="card">
+            <h3 class="h-display" style="font-size:18px;margin-bottom:6px">Montar prova</h3>
+            <p class="text-dim" style="font-size:13.5px;margin-bottom:18px">Clique nos exercícios selecionados para adicioná-los, em ordem, à prova.</p>
+            <div class="field"><label>Nome da prova</label><input type="text" id="prova-nome" placeholder="Ex: Grinder de Inverno"></div>
+            <div class="field"><label>Time cap</label><input type="text" id="prova-timecap" placeholder="Ex: 14:00"></div>
+            <div class="field"><label>Motor de pontuação</label>
+              <select id="prova-pontuacao"></select>
+              <span class="field-hint" id="prova-pontuacao-desc"></span>
+            </div>
+            <div class="field"><label>Categorias participantes</label>
+              <div class="flex" style="flex-wrap:wrap;gap:8px" id="prova-cats"></div>
+            </div>
+            <h4 style="font-size:13px;margin:16px 0 10px">Adicionar exercício à sequência (do catálogo selecionado na etapa anterior)</h4>
+            <div class="flex" style="flex-wrap:wrap;gap:8px" id="prova-ex-chips"></div>
+          </div>
+          <div class="card">
+            <div class="flex justify-between items-center" style="margin-bottom:16px">
+              <h3 class="h-display" style="font-size:18px">Sequência da prova</h3>
+              <button class="btn btn-primary btn-sm" onclick="salvarProva()">Salvar prova</button>
+            </div>
+            <div id="prova-blocos"></div>
+            <p class="text-faint" style="font-size:12px;margin-top:8px" id="prova-vazia">Nenhum exercício adicionado ainda.</p>
+            <hr class="divider" style="margin:22px 0">
+            <h4 style="font-size:13px;margin-bottom:12px">Provas já criadas neste campeonato</h4>
+            <div id="provas-criadas"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Baterias -->
+      <div class="wpane" data-p="4">
+        <div class="card">
+          <div class="flex justify-between items-center" style="margin-bottom:6px;flex-wrap:wrap;gap:10px">
+            <h3 class="h-display" style="font-size:18px">Baterias</h3>
+            <button class="btn btn-ghost btn-sm" onclick="gerarAutomatico()">✨ Gerar automaticamente</button>
+          </div>
+          <p class="text-dim" style="font-size:13.5px;margin-bottom:20px">Organize horários, arenas e equipes de cada prova em formato de agenda — ou deixe o sistema montar uma agenda inicial pra você editar depois.</p>
+          <div id="bat-list" style="margin-bottom:20px"></div>
+          <div class="grid" style="grid-template-columns:1fr .6fr .8fr 1fr auto;gap:10px;align-items:end">
+            <div class="field" style="margin-bottom:0"><label>Prova</label><input type="text" id="new-bat-prova" placeholder="Sprint Challenge"></div>
+            <div class="field" style="margin-bottom:0"><label>Horário</label><input type="time" id="new-bat-hora" value="09:00"></div>
+            <div class="field" style="margin-bottom:0"><label>Arena</label><input type="text" id="new-bat-arena" placeholder="Arena 1"></div>
+            <div class="field" style="margin-bottom:0"><label>Categoria</label><input type="text" id="new-bat-cat" placeholder="RX"></div>
+            <button class="btn btn-primary" onclick="addBateria()">Agendar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Landing page -->
+      <div class="wpane" data-p="5">
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:6px">Landing page</h3>
+          <p class="text-dim" style="font-size:13.5px;margin-bottom:20px">A página muda sozinha conforme o estado do campeonato. O título e a descrição já vêm da etapa 1 — dá pra revisar tudo no editor completo.</p>
+          <a href="landing-editor.html" class="btn btn-ghost btn-sm">Abrir editor visual completo →</a>
+        </div>
+      </div>
+
+      <!-- 7. Patrocinadores -->
+      <div class="wpane" data-p="6">
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:6px">Patrocinadores</h3>
+          <div class="grid g-3" id="sponsor-list" style="margin-bottom:20px"></div>
+          <div class="grid" style="grid-template-columns:1.4fr .8fr auto;gap:10px;align-items:end">
+            <div class="field" style="margin-bottom:0"><label>Nome</label><input type="text" id="new-sp-nome" placeholder="Ex: FitSupps"></div>
+            <div class="field" style="margin-bottom:0"><label>Cota</label><select id="new-sp-tier"><option>Ouro</option><option>Prata</option><option>Bronze</option></select></div>
+            <button class="btn btn-ghost" onclick="addPatrocinador()">Adicionar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. Regulamento -->
+      <div class="wpane" data-p="7">
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:16px">Regulamento</h3>
+          <div class="field"><label>Texto do regulamento</label><textarea rows="10" id="f-regulamento" placeholder="1. Cada atleta deve ter conta ativa na plataforma...."></textarea></div>
+        </div>
+      </div>
+
+      <!-- 9. Publicar -->
+      <div class="wpane" data-p="8">
+        <div class="card">
+          <h3 class="h-display" style="font-size:18px;margin-bottom:16px">Revisar e publicar</h3>
+          <div id="publish-checklist" style="margin-bottom:22px"></div>
+          <button class="btn btn-primary btn-block" id="publish-btn" onclick="publicar()">Publicar campeonato</button>
+          <p class="text-faint" style="font-size:12px;margin-top:12px;text-align:center">Depois de publicado, as inscrições abrem imediatamente e a landing page muda sozinha.</p>
+        </div>
+      </div>
+
+      <div class="flex gap-12" style="margin-top:28px">
+        <button class="btn btn-ghost" onclick="wizPrev()">Voltar</button>
+        <button class="btn btn-primary" style="flex:1" onclick="wizNext()" id="wiz-next-btn">Próximo</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"><span>✅</span><span id="toast-msg"></span></div>
+
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/mock-data.js"></script>
+<script src="../assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('admin', 'login.html');
+renderSidebar('admin','campeonatos');
+
+const STEP_LABELS = ['Informações','Categorias','Exercícios','Provas','Baterias','Landing Page','Patrocinadores','Regulamento','Publicar'];
+let wizStep = 0;
+let exerciciosSelecionados = new Set();
+let provaAtual = { pontuacao:PONTUACAO_PRESETS[0].id, cats:new Set(), blocos:[] };
+
+/* carrega o rascunho existente (se o admin já tinha começado antes) */
+let rascunho = arenaLoad('campeonato', {}) || {};
+renderTopbar('Novo campeonato', rascunho.nome || 'Rascunho não salvo ainda');
+
+function preencherFormularioComRascunho(){
+  document.getElementById('f-nome').value = rascunho.nome || '';
+  document.getElementById('f-desc').value = rascunho.descricao || '';
+  if(rascunho.tipo) document.getElementById('f-formato').value = rascunho.tipo;
+  document.getElementById('f-local').value = rascunho.local || '';
+  document.getElementById('f-data-ini-insc').value = rascunho.dataInicioInscricao || '';
+  document.getElementById('f-data-fim-insc').value = rascunho.dataFimInscricao || '';
+  document.getElementById('f-data-ini-evento').value = rascunho.dataInicioEvento || '';
+  document.getElementById('f-data-fim-evento').value = rascunho.dataFimEvento || '';
+  document.getElementById('f-preco-ind').value = rascunho.precoInscricaoIndividual || '';
+  document.getElementById('f-preco-eq').value = rascunho.precoInscricaoEquipe || '';
+  document.getElementById('f-regulamento').value = rascunho.regulamento || '';
+}
+function salvarInfoBasica(){
+  rascunho = arenaSalvarRascunhoCampeonato({
+    nome: document.getElementById('f-nome').value.trim() || 'Campeonato sem nome',
+    descricao: document.getElementById('f-desc').value.trim(),
+    tipo: document.getElementById('f-formato').value,
+    local: document.getElementById('f-local').value.trim(),
+    dataInicioInscricao: document.getElementById('f-data-ini-insc').value,
+    dataFimInscricao: document.getElementById('f-data-fim-insc').value,
+    dataInicioEvento: document.getElementById('f-data-ini-evento').value,
+    dataFimEvento: document.getElementById('f-data-fim-evento').value,
+    precoInscricaoIndividual: +document.getElementById('f-preco-ind').value || 0,
+    precoInscricaoEquipe: +document.getElementById('f-preco-eq').value || 0,
+    regulamento: document.getElementById('f-regulamento').value,
+    equipesConfirmadas: rascunho.equipesConfirmadas || 0,
+    atletasInscritos: rascunho.atletasInscritos || 0,
+    vagasTotais: rascunho.vagasTotais || 200,
+  });
+  renderTopbar('Novo campeonato', rascunho.nome);
+}
+
+function renderWizSteps(){
+  document.getElementById('wiz-steps').innerHTML = STEP_LABELS.map((l,i)=>
+    `<div class="ws ${i===wizStep?'active':i<wizStep?'done':''}" onclick="goToStep(${i})">${i+1}. ${l}</div>`).join('');
+  document.getElementById('wiz-next-btn').textContent = wizStep===STEP_LABELS.length-1 ? 'Ir para publicação' : 'Próximo';
+}
+function goToStep(i){
+  salvarInfoBasica();
+  wizStep = i;
+  document.querySelectorAll('.wpane').forEach(p=>p.classList.toggle('active', +p.dataset.p===i));
+  renderWizSteps();
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(i===8) renderChecklist();
+}
+function wizNext(){ if(wizStep<STEP_LABELS.length-1) goToStep(wizStep+1); }
+function wizPrev(){ if(wizStep>0) goToStep(wizStep-1); }
+
+/* ---- categorias (persistidas em 'categorias') ---- */
+function renderCategorias(){
+  const cats = arenaListar('categorias');
+  document.getElementById('cat-list').innerHTML = cats.map(c=>`
+    <div class="flex items-center justify-between" style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div><strong>${c.nome}</strong> <span class="text-faint mono" style="font-size:12px;margin-left:8px">${c.minAtletas}–${c.maxAtletas} atletas</span></div>
+      <span class="remove-x" onclick="removerCategoria('${c.id}')">✕</span>
+    </div>`).join('') || '<p class="text-faint" style="font-size:13px">Nenhuma categoria ainda.</p>';
+  renderProvaCats();
+}
+function addCategoria(){
+  const nome = document.getElementById('new-cat-nome').value.trim();
+  if(!nome) return;
+  const min = +document.getElementById('new-cat-min').value || 1;
+  const max = +document.getElementById('new-cat-max').value || 1;
+  const cores = ['#196913','#1D6FD1','#D97706','#8B5CF6','#DC2626'];
+  const cor = cores[arenaListar('categorias').length % cores.length];
+  arenaAdicionar('categorias', {nome, minAtletas:min, maxAtletas:max, cor, descricao:'', inscritos:0}, 'cat');
+  document.getElementById('new-cat-nome').value='';
+  renderCategorias();
+  mostrarToast('Categoria "'+nome+'" adicionada — já disponível pros atletas se inscreverem.');
+}
+function removerCategoria(id){ arenaRemover('categorias', id); renderCategorias(); }
+
+/* ---- exercícios (catálogo permanente da academia) ---- */
+function renderExercicios(){
+  const todos = arenaCatalogoExercicios();
+  document.getElementById('ex-chips').innerHTML = todos.length ? todos.map(e=>`
+    <div class="chip ${exerciciosSelecionados.has(e.id)?'selected':''}" onclick="toggleExercicio('${e.id}')">${e.img||'⭐'} ${e.nome}</div>`).join('')
+    : '<p class="text-faint" style="font-size:13px">Catálogo vazio — cadastre o primeiro exercício abaixo.</p>';
+  renderProvaExChips();
+}
+function toggleExercicio(id){
+  exerciciosSelecionados.has(id) ? exerciciosSelecionados.delete(id) : exerciciosSelecionados.add(id);
+  renderExercicios();
+}
+function addExercicio(){
+  const nome = document.getElementById('new-ex-nome').value.trim();
+  if(!nome) return;
+  const tipo = document.getElementById('new-ex-tipo').value.trim() || 'Personalizado';
+  const metricas = document.getElementById('new-ex-metricas').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const novo = arenaAdicionarExercicio({nome, tipo, metricas: metricas.length?metricas:['Repetições'], img:'⭐'});
+  exerciciosSelecionados.add(novo.id);
+  document.getElementById('new-ex-nome').value='';
+  document.getElementById('new-ex-tipo').value='';
+  document.getElementById('new-ex-metricas').value='';
+  renderExercicios();
+  mostrarToast('Exercício "'+nome+'" cadastrado no catálogo da academia — vale pra sempre, não só este campeonato.');
+}
+
+/* ---- modelos de prova prontos ---- */
+function renderModelos(){
+  document.getElementById('modelos-prova').innerHTML = ARENA_MODELOS_PROVA.map((m,i)=>`
+    <div class="modelo-card" onclick="usarModelo(${i})">
+      <strong style="font-size:13.5px">${m.nome}</strong>
+      <div class="text-faint" style="font-size:11.5px;margin-top:4px">${m.blocos.length} etapas · ${PONTUACAO_PRESETS.find(p=>p.id===m.pontuacao).nome}</div>
+    </div>`).join('');
+}
+function usarModelo(i){
+  const m = ARENA_MODELOS_PROVA[i];
+  document.getElementById('prova-nome').value = m.nome;
+  document.getElementById('prova-timecap').value = m.timecap;
+  document.getElementById('prova-pontuacao').value = m.pontuacao;
+  provaAtual.pontuacao = m.pontuacao;
+  document.getElementById('prova-pontuacao-desc').textContent = PONTUACAO_PRESETS.find(p=>p.id===m.pontuacao).desc;
+  provaAtual.blocos = JSON.parse(JSON.stringify(m.blocos));
+  renderBlocos();
+  mostrarToast('Modelo "'+m.nome+'" carregado — ajuste o que precisar e salve.');
+}
+
+/* ---- provas builder (persistidas em 'provas') ---- */
+function renderPontuacaoSelect(){
+  const sel = document.getElementById('prova-pontuacao');
+  sel.innerHTML = PONTUACAO_PRESETS.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  sel.onchange = ()=>{ provaAtual.pontuacao = sel.value; document.getElementById('prova-pontuacao-desc').textContent = PONTUACAO_PRESETS.find(p=>p.id===sel.value).desc; };
+  sel.onchange();
+}
+function renderProvaCats(){
+  const cats = arenaListar('categorias');
+  document.getElementById('prova-cats').innerHTML = cats.map(c=>`
+    <div class="chip ${provaAtual.cats.has(c.nome)?'selected':''}" onclick="toggleProvaCat('${c.nome}')">${c.nome}</div>`).join('') || '<span class="text-faint" style="font-size:12.5px">Cadastre categorias primeiro.</span>';
+}
+function toggleProvaCat(nome){ provaAtual.cats.has(nome) ? provaAtual.cats.delete(nome) : provaAtual.cats.add(nome); renderProvaCats(); }
+function renderProvaExChips(){
+  const todos = arenaCatalogoExercicios().filter(e=>exerciciosSelecionados.has(e.id));
+  document.getElementById('prova-ex-chips').innerHTML = todos.length ? todos.map(e=>`<div class="chip" onclick="addBloco('${e.id}')">${e.img||'⭐'} + ${e.nome}</div>`).join('')
+    : '<p class="text-faint" style="font-size:12.5px">Selecione exercícios na etapa anterior primeiro.</p>';
+}
+function addBloco(exId){
+  const ex = arenaCatalogoExercicios().find(e=>e.id===exId);
+  if(!ex) return;
+  provaAtual.blocos.push({nome:ex.nome, img:ex.img||'⭐', detalhe:(ex.metricas||[]).join(' / ')});
+  renderBlocos();
+}
+function removerBloco(i){ provaAtual.blocos.splice(i,1); renderBlocos(); }
+function moverBloco(i, dir){
+  const j = i+dir; if(j<0||j>=provaAtual.blocos.length) return;
+  [provaAtual.blocos[i], provaAtual.blocos[j]] = [provaAtual.blocos[j], provaAtual.blocos[i]];
+  renderBlocos();
+}
+function renderBlocos(){
+  const wrap = document.getElementById('prova-blocos');
+  wrap.innerHTML = provaAtual.blocos.map((b,i)=>`
+    <div class="builder-block">
+      <span class="ord">${i+1}</span><span class="ic">${b.img}</span>
+      <div class="meta"><strong>${b.nome}</strong><span>${b.detalhe}</span></div>
+      <span class="drag" onclick="moverBloco(${i},-1)">▲</span>
+      <span class="drag" onclick="moverBloco(${i},1)">▼</span>
+      <span class="remove-x" onclick="removerBloco(${i})">✕</span>
+    </div>`).join('');
+  document.getElementById('prova-vazia').style.display = provaAtual.blocos.length ? 'none' : 'block';
+}
+function salvarProva(){
+  const nome = document.getElementById('prova-nome').value.trim();
+  if(!nome || !provaAtual.blocos.length){ mostrarToast('Dê um nome e adicione ao menos um exercício.'); return; }
+  arenaAdicionar('provas', {
+    nome, timecap:document.getElementById('prova-timecap').value, pontuacao:provaAtual.pontuacao,
+    cats:[...provaAtual.cats], blocos:[...provaAtual.blocos], arena:'Arena 1'
+  }, 'prova');
+  provaAtual = { pontuacao:PONTUACAO_PRESETS[0].id, cats:new Set(), blocos:[] };
+  document.getElementById('prova-nome').value=''; document.getElementById('prova-timecap').value='';
+  renderBlocos(); renderProvaCats(); renderProvasCriadas();
+  mostrarToast('Prova "'+nome+'" salva.');
+}
+function renderProvasCriadas(){
+  const provas = arenaListar('provas');
+  document.getElementById('provas-criadas').innerHTML = provas.length ? provas.map(p=>`
+    <div class="flex justify-between items-center" style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div><strong style="font-size:13.5px">${p.nome}</strong><div class="text-faint" style="font-size:11.5px">${(p.blocos||[]).length} etapas · ${(p.cats||[]).join(', ')}</div></div>
+      <div class="flex items-center gap-8"><span class="badge badge-muted">${p.timecap||'—'}</span><span class="remove-x" onclick="removerProva('${p.id}')">✕</span></div>
+    </div>`).join('') : '<p class="text-faint" style="font-size:13px">Nenhuma prova criada ainda.</p>';
+}
+function removerProva(id){ arenaRemover('provas', id); renderProvasCriadas(); }
+
+/* ---- baterias (persistidas em 'baterias') ---- */
+function renderBaterias(){
+  const baterias = arenaListar('baterias');
+  document.getElementById('bat-list').innerHTML = baterias.length ? baterias.map(b=>`
+    <div class="flex items-center justify-between" style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div class="flex items-center gap-16">
+        <div class="mono" style="font-weight:700;color:var(--flame-hi);min-width:56px">${b.horario}</div>
+        <div><strong style="font-size:13.5px">${b.prova}</strong><div class="text-faint" style="font-size:11.5px">${b.arena} · ${b.categoria}</div></div>
+      </div>
+      <div class="flex items-center gap-8"><span class="badge badge-muted">agendada</span><span class="remove-x" onclick="removerBateria('${b.id}')">✕</span></div>
+    </div>`).join('') : '<p class="text-faint" style="font-size:13px">Nenhuma bateria agendada ainda.</p>';
+}
+function addBateria(){
+  const prova = document.getElementById('new-bat-prova').value.trim();
+  if(!prova) return;
+  arenaAdicionar('baterias', {
+    prova, horario:document.getElementById('new-bat-hora').value,
+    arena:document.getElementById('new-bat-arena').value||'Arena 1',
+    categoria:document.getElementById('new-bat-cat').value||'—', equipes:[], status:'agendada'
+  }, 'bateria');
+  document.getElementById('new-bat-prova').value='';
+  renderBaterias();
+  mostrarToast('Bateria agendada.');
+}
+function removerBateria(id){ arenaRemover('baterias', id); renderBaterias(); }
+function gerarAutomatico(){
+  const r = arenaGerarBateriasAutomaticamente();
+  if(r.erro){ mostrarToast(r.erro); return; }
+  renderBaterias();
+  mostrarToast(r.geradas + ' baterias geradas automaticamente. Ajuste horários se precisar.');
+}
+
+/* ---- patrocinadores (persistidos em 'sponsors') ---- */
+function renderSponsors(){
+  const sponsors = arenaListar('sponsors');
+  document.getElementById('sponsor-list').innerHTML = sponsors.map(s=>`
+    <div class="card" style="text-align:center;position:relative">
+      <span class="remove-x" style="position:absolute;top:10px;right:12px" onclick="removerSponsor('${s.id}')">✕</span>
+      <div style="font-family:var(--font-display);font-size:16px;text-transform:uppercase">${s.nome}</div>
+      <span class="badge badge-muted" style="margin-top:8px">${s.tier}</span>
+    </div>`).join('') || '<p class="text-faint" style="font-size:13px;grid-column:1/-1">Nenhum patrocinador ainda.</p>';
+}
+function addPatrocinador(){
+  const nome = document.getElementById('new-sp-nome').value.trim();
+  if(!nome) return;
+  arenaAdicionar('sponsors', {nome, tier:document.getElementById('new-sp-tier').value}, 'sp');
+  document.getElementById('new-sp-nome').value='';
+  renderSponsors();
+  mostrarToast('Patrocinador adicionado.');
+}
+function removerSponsor(id){ arenaRemover('sponsors', id); renderSponsors(); }
+
+/* ---- publicar ---- */
+function renderChecklist(){
+  const items = [
+    {ok:arenaListar('categorias').length>0, label:'Categorias configuradas ('+arenaListar('categorias').length+')'},
+    {ok:arenaCatalogoExercicios().length>0, label:'Exercícios no catálogo ('+arenaCatalogoExercicios().length+')'},
+    {ok:arenaListar('provas').length>0, label:'Ao menos uma prova criada ('+arenaListar('provas').length+')'},
+    {ok:arenaListar('baterias').length>0, label:'Ao menos uma bateria agendada ('+arenaListar('baterias').length+')'},
+    {ok:arenaListar('sponsors').length>0, label:'Patrocinadores cadastrados'},
+    {ok:!!(rascunho.regulamento && rascunho.regulamento.trim()), label:'Regulamento preenchido'},
+    {ok:!!(rascunho.nome && rascunho.dataInicioEvento), label:'Informações básicas e datas preenchidas'},
+  ];
+  document.getElementById('publish-checklist').innerHTML = items.map(i=>`
+    <div class="checklist-item"><div class="chk-icon ${i.ok?'chk-done':'chk-pending'}">${i.ok?'✓':'!'}</div><span class="${i.ok?'':'text-dim'}">${i.label}</span></div>`).join('');
+  const podePublicar = items.every(i=>i.ok);
+  document.getElementById('publish-btn').disabled = !podePublicar;
+  document.getElementById('publish-btn').textContent = podePublicar ? 'Publicar campeonato' : 'Complete os itens pendentes acima';
+}
+function publicar(){
+  const r = arenaPublicarCampeonato();
+  if(r.erro){ mostrarToast(r.erro); return; }
+  mostrarToast('Campeonato publicado! A landing page já está no ar.');
+  setTimeout(()=>window.location.href='campeonatos.html', 1400);
+}
+
+function mostrarToast(msg){
+  const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+preencherFormularioComRascunho();
+renderWizSteps(); renderCategorias(); renderExercicios(); renderModelos(); renderPontuacaoSelect();
+renderProvaCats(); renderProvaExChips(); renderBlocos(); renderProvasCriadas(); renderBaterias(); renderSponsors();
+</script>
+</body>
+</html>

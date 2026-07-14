@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criar conta e inscrever-se — Crossbox</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  body{min-height:100vh;}
+  .wiz-wrap{max-width:640px;margin:0 auto;padding:48px 24px 100px;}
+  .wiz-step{display:none;}
+  .wiz-step.active{display:block;}
+  .option-card{border:1px solid var(--border-hi);background:var(--surface);border-radius:var(--radius);padding:22px;cursor:pointer;transition:.15s;}
+  .option-card:hover{border-color:var(--flame);}
+  .option-card.selected{border-color:var(--flame);background:rgba(var(--flame-rgb),.06);box-shadow:var(--shadow-flame);}
+  .cat-card{border:1px solid var(--border-hi);background:var(--surface);border-radius:12px;padding:16px;cursor:pointer;transition:.15s;}
+  .cat-card.selected{border-color:var(--flame);background:rgba(var(--flame-rgb),.06);}
+  .wiz-erro{color:var(--danger);font-size:13px;margin:-8px 0 16px;display:none;}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<nav class="nav"><div class="wrap nav-inner">
+  <a href="index.html" class="brand"><span class="brand-mark">C</span> Crossbox</a>
+  <span class="text-faint mono" style="font-size:12.5px" id="nav-camp-nome">Inscrição</span>
+</div></nav>
+
+<div class="wiz-wrap" id="wiz-wrap">
+  <!-- progress -->
+  <div class="stepper" id="wiz-stepper" style="margin-bottom:40px"></div>
+
+  <!-- STEP 1: conta -->
+  <section class="wiz-step active" data-step="1">
+    <span class="eyebrow">Passo 1 de 4</span>
+    <h2 class="h-display" style="margin:10px 0 6px">Crie sua conta</h2>
+    <p class="text-dim" style="margin-bottom:28px">Sua conta é permanente: você a usa neste e em todos os próximos campeonatos da Crossbox.</p>
+    <div class="field"><label>Nome completo</label><input type="text" placeholder="Seu nome" id="reg-nome"></div>
+    <div class="field"><label>E-mail</label><input type="email" placeholder="voce@email.com" id="reg-email"></div>
+    <div class="grid g-2">
+      <div class="field"><label>Senha</label><input type="password" placeholder="Mínimo 8 caracteres" id="reg-senha"></div>
+      <div class="field"><label>Confirmar senha</label><input type="password" placeholder="Repita a senha" id="reg-senha2"></div>
+    </div>
+    <p class="wiz-erro" id="erro-1"></p>
+    <button class="btn btn-primary btn-block" onclick="criarConta()">Continuar</button>
+    <p class="text-dim" style="text-align:center;margin-top:20px;font-size:14px">Já tem conta? <a href="login.html" style="color:var(--flame-hi);font-weight:600">Entrar</a></p>
+  </section>
+
+  <!-- STEP 2: individual ou equipe -->
+  <section class="wiz-step" data-step="2">
+    <span class="eyebrow">Passo 2 de 4</span>
+    <h2 class="h-display" style="margin:10px 0 6px">Como você vai competir?</h2>
+    <p class="text-dim" style="margin-bottom:24px" id="passo2-sub">Depende da categoria escolhida.</p>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px" id="tipo-inscricao">
+      <div class="option-card" data-tipo="individual" onclick="selecionarTipo('individual')">
+        <div style="font-size:26px;margin-bottom:8px">🧍</div>
+        <strong>Individual</strong>
+        <p class="text-dim" style="font-size:13.5px;margin-top:6px">Você compete sozinho, em uma categoria individual.</p>
+      </div>
+      <div class="option-card" data-tipo="equipe" onclick="selecionarTipo('equipe')">
+        <div style="font-size:26px;margin-bottom:8px">👥</div>
+        <strong>Em equipe</strong>
+        <p class="text-dim" style="font-size:13.5px;margin-top:6px">Crie uma equipe nova ou entre em uma existente com um código de convite.</p>
+      </div>
+    </div>
+
+    <!-- sub-opções de equipe -->
+    <div id="equipe-suboptions" style="display:none;margin-bottom:22px">
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px">
+        <div class="option-card" data-sub="criar" onclick="selecionarSubEquipe('criar')">
+          <strong>Criar uma equipe</strong>
+          <p class="text-dim" style="font-size:13px;margin-top:6px">Você vira o líder e convida os integrantes depois.</p>
+        </div>
+        <div class="option-card" data-sub="entrar" onclick="selecionarSubEquipe('entrar')">
+          <strong>Entrar com um código</strong>
+          <p class="text-dim" style="font-size:13px;margin-top:6px">Recebeu um convite? Digite o código do seu líder.</p>
+        </div>
+      </div>
+      <div id="campo-nome-equipe" style="display:none;margin-top:18px" class="field">
+        <label>Nome da equipe</label>
+        <input type="text" placeholder="Ex: Ferro & Fé" id="input-nome-equipe">
+      </div>
+      <div id="campo-codigo-convite" style="display:none;margin-top:18px" class="field">
+        <label>Código de convite</label>
+        <input type="text" placeholder="Ex: FERRO-1234" id="input-codigo-convite">
+        <span class="field-hint">Peça o código para o líder da equipe, ou use o link que ele te enviou.</span>
+      </div>
+    </div>
+    <p class="wiz-erro" id="erro-2"></p>
+
+    <div class="flex gap-12">
+      <button class="btn btn-ghost" onclick="goStep(1)">Voltar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="validarStep2()">Continuar</button>
+    </div>
+  </section>
+
+  <!-- STEP 3: categoria -->
+  <section class="wiz-step" data-step="3">
+    <span class="eyebrow">Passo 3 de 4</span>
+    <h2 class="h-display" style="margin:10px 0 6px">Escolha sua categoria</h2>
+    <p class="text-dim" style="margin-bottom:24px">As vagas e regras variam por categoria — confira o mínimo e máximo de atletas antes de escolher.</p>
+    <div class="grid" style="grid-template-columns:1fr;gap:12px" id="categorias-select"></div>
+    <p class="wiz-erro" id="erro-3"></p>
+    <div class="flex gap-12" style="margin-top:24px">
+      <button class="btn btn-ghost" onclick="goStep(2)">Voltar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmarEquipeECategoria()">Continuar para pagamento</button>
+    </div>
+  </section>
+
+  <!-- STEP 4: resumo + pagamento -->
+  <section class="wiz-step" data-step="4">
+    <span class="eyebrow">Passo 4 de 4</span>
+    <h2 class="h-display" style="margin:10px 0 6px">Revise e pague sua inscrição</h2>
+    <p class="text-dim" style="margin-bottom:24px">Cada atleta paga a própria inscrição. Sua equipe só é confirmada quando todos os membros estiverem pagos.</p>
+    <div class="card" style="margin-bottom:22px">
+      <div class="flex justify-between" style="margin-bottom:14px"><span class="text-dim">Campeonato</span><strong id="resumo-campeonato">—</strong></div>
+      <div class="flex justify-between" style="margin-bottom:14px"><span class="text-dim">Modalidade</span><strong id="resumo-tipo">—</strong></div>
+      <div class="flex justify-between" style="margin-bottom:14px"><span class="text-dim">Categoria</span><strong id="resumo-categoria">—</strong></div>
+      <hr class="divider" style="margin:14px 0">
+      <div class="flex justify-between"><span class="text-dim">Valor da sua inscrição</span><strong class="mono" style="font-size:20px;color:var(--flame-hi)" id="resumo-valor">—</strong></div>
+    </div>
+    <div class="flex gap-12">
+      <button class="btn btn-ghost" onclick="goStep(3)">Voltar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="irParaPagamento()">Ir para pagamento</button>
+    </div>
+  </section>
+</div>
+
+<!-- Estado vazio: nenhum campeonato com inscrições abertas -->
+<div class="wiz-wrap" id="sem-campeonato" style="display:none;text-align:center;padding-top:100px">
+  <span class="eyebrow" style="justify-content:center;display:flex">Crossbox</span>
+  <h2 class="h-display" style="margin:14px 0 10px">Nenhuma inscrição aberta no momento</h2>
+  <p class="text-dim" style="margin-bottom:24px">Assim que a academia publicar um campeonato com inscrições abertas, você poderá se inscrever por aqui.</p>
+  <a href="index.html" class="btn btn-ghost">Voltar ao site</a>
+</div>
+
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script>
+/* Hidrata os dados reais salvos (mesma técnica da landing page) */
+CAMPEONATO_ATUAL = arenaCampeonatoAtivo();
+arenaHydrateArray(CATEGORIAS, 'categorias');
+
+let tipoInscricao = null, subEquipe = null, equipeAtual = null;
+
+/* Se não existe campeonato com inscrições abertas, nem mostra o assistente */
+if(!CAMPEONATO_ATUAL || CAMPEONATO_ATUAL.estado !== 'inscricoes_abertas'){
+  document.getElementById('wiz-wrap').style.display = 'none';
+  document.getElementById('sem-campeonato').style.display = 'block';
+} else {
+  document.getElementById('nav-camp-nome').textContent = CAMPEONATO_ATUAL.nome + ' · Inscrição';
+  // Se já existe sessão de atleta ativa, pula a criação de conta
+  const sessao = arenaSessao();
+  if(sessao && sessao.tipo === 'atleta'){
+    goStep(2, true);
+  }
+}
+
+function renderStepper(){
+  const cur = document.querySelector('.wiz-step.active').dataset.step;
+  const labels = ['Conta','Modalidade','Categoria','Pagamento'];
+  document.getElementById('wiz-stepper').innerHTML = labels.map((l,i)=>{
+    const n = i+1, state = n<cur?'done':n==cur?'current':'';
+    return `<div class="step ${state}"><div class="step-dot">${n<cur?'✓':n}</div><span class="step-label">${l}</span></div>${i<3?'<div class="step-line '+(n<cur?'done':'')+'"></div>':''}`;
+  }).join('');
+}
+function goStep(n, semScroll){
+  document.querySelectorAll('.wiz-step').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`.wiz-step[data-step="${n}"]`).classList.add('active');
+  if(n===3) renderCategorias();
+  if(n===4) renderResumo();
+  renderStepper();
+  if(!semScroll) window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function mostrarErro(id, msg){
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+}
+function limparErro(id){ document.getElementById(id).style.display = 'none'; }
+
+/* ---------------- passo 1: conta ---------------- */
+function criarConta(){
+  limparErro('erro-1');
+  const nome = document.getElementById('reg-nome').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const senha = document.getElementById('reg-senha').value;
+  const senha2 = document.getElementById('reg-senha2').value;
+  if(!nome || !email || !senha){ mostrarErro('erro-1','Preencha todos os campos.'); return; }
+  if(senha.length < 8){ mostrarErro('erro-1','A senha precisa ter ao menos 8 caracteres.'); return; }
+  if(senha !== senha2){ mostrarErro('erro-1','As senhas não coincidem.'); return; }
+  const r = arenaCriarConta(nome, email, senha);
+  if(r.erro){ mostrarErro('erro-1', r.erro); return; }
+  goStep(2);
+}
+
+/* ---------------- passo 2: individual ou equipe ---------------- */
+function selecionarTipo(t){
+  tipoInscricao = t;
+  document.querySelectorAll('#tipo-inscricao .option-card').forEach(c=>c.classList.toggle('selected', c.dataset.tipo===t));
+  document.getElementById('equipe-suboptions').style.display = t==='equipe' ? 'block' : 'none';
+}
+function selecionarSubEquipe(s){
+  subEquipe = s;
+  document.querySelectorAll('#equipe-suboptions .option-card[data-sub]').forEach(c=>c.classList.toggle('selected', c.dataset.sub===s));
+  document.getElementById('campo-nome-equipe').style.display = s==='criar' ? 'block' : 'none';
+  document.getElementById('campo-codigo-convite').style.display = s==='entrar' ? 'block' : 'none';
+}
+function validarStep2(){
+  limparErro('erro-2');
+  if(!tipoInscricao){ mostrarErro('erro-2','Escolha se você vai competir individualmente ou em equipe.'); return; }
+  if(tipoInscricao==='equipe'){
+    if(!subEquipe){ mostrarErro('erro-2','Escolha se você vai criar ou entrar em uma equipe.'); return; }
+    if(subEquipe==='criar' && !document.getElementById('input-nome-equipe').value.trim()){ mostrarErro('erro-2','Dê um nome para a sua equipe.'); return; }
+    if(subEquipe==='entrar' && !document.getElementById('input-codigo-convite').value.trim()){ mostrarErro('erro-2','Informe o código de convite.'); return; }
+  }
+  goStep(3);
+}
+
+/* ---------------- passo 3: categoria ---------------- */
+function renderCategorias(){
+  const wrap = document.getElementById('categorias-select');
+  const cats = tipoInscricao==='individual'
+    ? CATEGORIAS.filter(c=>c.maxAtletas===1)
+    : CATEGORIAS.filter(c=>c.maxAtletas>1);
+  wrap.innerHTML = cats.length ? cats.map(c=>`
+    <div class="cat-card" data-cat="${c.nome}" onclick="selecionarCategoria('${c.nome}')">
+      <div class="flex justify-between items-center">
+        <strong style="color:${c.cor||'var(--flame)'}">${c.nome}</strong>
+        <span class="text-faint mono" style="font-size:12px">${c.minAtletas===c.maxAtletas?c.maxAtletas+' atletas':c.minAtletas+'–'+c.maxAtletas+' atletas'}</span>
+      </div>
+      <p class="text-dim" style="font-size:13px;margin-top:6px">${c.descricao||''}</p>
+    </div>`).join('') : '<p class="text-faint">Nenhuma categoria disponível para essa modalidade ainda.</p>';
+}
+function selecionarCategoria(nome){
+  window.categoriaEscolhida = nome;
+  document.querySelectorAll('.cat-card').forEach(c=>c.classList.toggle('selected', c.dataset.cat===nome));
+  limparErro('erro-3');
+}
+
+/* Cria/entra na equipe de verdade (persistindo) só quando a categoria já
+   foi escolhida — é nesse momento que temos toda a informação necessária. */
+function confirmarEquipeECategoria(){
+  limparErro('erro-3');
+  if(!window.categoriaEscolhida){ mostrarErro('erro-3','Escolha uma categoria para continuar.'); return; }
+  const user = arenaUsuarioAtual();
+  if(!user){ window.location.href = 'login.html'; return; }
+
+  if(tipoInscricao==='equipe' && !equipeAtual){
+    if(subEquipe==='criar'){
+      const nomeEquipe = document.getElementById('input-nome-equipe').value.trim();
+      equipeAtual = arenaCriarEquipe(nomeEquipe, window.categoriaEscolhida, user);
+    } else {
+      const codigo = document.getElementById('input-codigo-convite').value.trim();
+      const r = arenaEntrarEquipeComCodigo(codigo, user);
+      if(r.erro){ mostrarErro('erro-3', r.erro); return; }
+      equipeAtual = r.equipe;
+    }
+  }
+  goStep(4);
+}
+
+/* ---------------- passo 4: resumo + pagamento ---------------- */
+function renderResumo(){
+  document.getElementById('resumo-campeonato').textContent = CAMPEONATO_ATUAL.nome;
+  document.getElementById('resumo-tipo').textContent = tipoInscricao==='individual'
+    ? 'Individual' : ('Equipe · ' + (equipeAtual ? equipeAtual.nome : ''));
+  document.getElementById('resumo-categoria').textContent = window.categoriaEscolhida || '—';
+  const precoInd = CAMPEONATO_ATUAL.precoInscricaoIndividual || 0;
+  const precoEq = CAMPEONATO_ATUAL.precoInscricaoEquipe || 0;
+  const cat = CATEGORIAS.find(c=>c.nome===window.categoriaEscolhida);
+  const partes = cat ? cat.maxAtletas : 1;
+  document.getElementById('resumo-valor').textContent = tipoInscricao==='individual'
+    ? 'R$ ' + precoInd.toFixed(2).replace('.',',')
+    : 'R$ ' + (precoEq/partes).toFixed(2).replace('.',',') + ' (sua parte)';
+}
+function irParaPagamento(){
+  // deixa registrado o que esta inscrição se refere, pra checkout.html saber
+  // o que marcar como pago quando o usuário confirmar.
+  arenaSave('ultima_inscricao', {
+    tipo: tipoInscricao,
+    categoria: window.categoriaEscolhida,
+    equipeId: equipeAtual ? equipeAtual.id : null,
+    valor: document.getElementById('resumo-valor').textContent
+  });
+  window.location.href = 'checkout.html';
+}
+</script>
+</body>
+</html>

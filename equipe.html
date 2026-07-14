@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha equipe — Crossbox</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      <span class="badge badge-muted" id="topo-status-badge">—</span>
+    </div>
+    <div class="content">
+
+      <!-- estado: sem equipe -->
+      <div class="card" id="sem-equipe" style="display:none;text-align:center;padding:56px 24px">
+        <h3 class="h-display" style="font-size:20px;margin-bottom:10px">Você ainda não faz parte de uma equipe</h3>
+        <p class="text-dim" style="margin-bottom:22px;max-width:420px;margin-left:auto;margin-right:auto">Crie uma equipe nova ou entre em uma existente com um código de convite pela tela de inscrição.</p>
+        <a href="cadastro.html" class="btn btn-primary">Ir para inscrição</a>
+      </div>
+
+      <div id="com-equipe" style="display:none">
+        <div class="card" style="margin-bottom:28px">
+          <h3 class="h-display" style="font-size:16px;margin-bottom:20px">Status da equipe</h3>
+          <div class="stepper" id="team-stepper"></div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1.4fr .9fr;gap:24px">
+          <div class="card">
+            <div class="flex justify-between items-center" style="margin-bottom:18px">
+              <h3 class="h-display" style="font-size:18px" id="equipe-nome-cat">—</h3>
+              <span class="text-faint mono" style="font-size:12px" id="equipe-lider">—</span>
+            </div>
+            <div id="membros-lista"></div>
+
+            <div id="bloco-convidar-email">
+              <hr class="divider" style="margin:22px 0">
+              <h4 style="font-size:14px;margin-bottom:12px">Convidar novo integrante</h4>
+              <div class="flex gap-12" style="flex-wrap:wrap">
+                <input type="email" id="convite-email" placeholder="email@amigo.com" style="flex:1;min-width:200px;background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:10px;padding:12px 14px;color:var(--chalk)">
+                <button class="btn btn-primary" onclick="convidarPorEmail()">Enviar convite</button>
+              </div>
+              <p class="text-faint" style="font-size:12px;margin-top:10px">Neste protótipo, o convite por e-mail é simulado — na prática, quem quiser entrar deve usar o código ao lado.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4 style="font-size:14px;margin-bottom:14px">Código de convite da equipe</h4>
+            <div class="card card-hi" style="text-align:center;padding:20px">
+              <div class="mono" style="font-size:22px;letter-spacing:.08em;font-weight:700;color:var(--flame-hi)" id="codigo-convite">—</div>
+            </div>
+            <button class="btn btn-ghost btn-block btn-sm" style="margin-top:12px" onclick="copiarCodigo()">Copiar código</button>
+            <button class="btn btn-ghost btn-block btn-sm" style="margin-top:8px" onclick="copiarLink()">Copiar link de convite</button>
+            <p class="text-faint" style="font-size:12px;margin-top:14px">Qualquer pessoa com o código ou o link pode entrar diretamente na sua equipe.</p>
+
+            <div id="bloco-lider">
+              <hr class="divider" style="margin:20px 0">
+              <h4 style="font-size:14px;margin-bottom:10px">Ações do líder</h4>
+              <button class="btn btn-ghost btn-block btn-sm" style="margin-bottom:8px" onclick="renomearEquipe()">Alterar nome da equipe</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span>✅</span><span id="toast-msg">Convite enviado com sucesso.</span></div>
+
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script src="assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('atleta', 'login.html');
+const usuario = arenaUsuarioAtual();
+let equipe = arenaMinhaEquipe(usuario.id);
+
+renderSidebar('atleta','equipe');
+renderTopbar('Minha equipe', equipe ? equipe.nome : 'Você ainda não tem equipe');
+
+const STATUS_LABEL = {montando:'Montando equipe', aguardando_pagamento:'Aguardando pagamentos', confirmada:'Equipe confirmada', competindo:'Competindo', finalizada:'Finalizada'};
+const STATUS_BADGE = {montando:'badge-muted', aguardando_pagamento:'badge-amber', confirmada:'badge-success', competindo:'badge-live', finalizada:'badge-muted'};
+
+function renderPagina(){
+  if(!equipe){
+    document.getElementById('sem-equipe').style.display = 'block';
+    document.getElementById('com-equipe').style.display = 'none';
+    document.getElementById('topo-status-badge').textContent = 'Sem equipe';
+    return;
+  }
+  document.getElementById('sem-equipe').style.display = 'none';
+  document.getElementById('com-equipe').style.display = 'block';
+
+  const badge = document.getElementById('topo-status-badge');
+  badge.textContent = STATUS_LABEL[equipe.status] || equipe.status;
+  badge.className = 'badge ' + (STATUS_BADGE[equipe.status] || 'badge-muted');
+
+  document.getElementById('equipe-nome-cat').innerHTML = `${equipe.nome} <span class="badge badge-muted" style="margin-left:8px">${equipe.categoria}</span>`;
+  const liderNome = (equipe.membros.find(m=>m.userId===equipe.liderId)||{}).nome || '—';
+  document.getElementById('equipe-lider').textContent = 'Líder: ' + liderNome;
+  document.getElementById('codigo-convite').textContent = equipe.codigoConvite;
+
+  document.getElementById('membros-lista').innerHTML = equipe.membros.map(m=>`
+    <div class="flex items-center justify-between" style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div class="flex items-center gap-12">
+        <div class="avatar" style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:13px">${m.avatar}</div>
+        <span style="font-weight:600">${m.nome}${m.userId===equipe.liderId ? ' <span class="text-faint" style=\'font-weight:400\'>(líder)</span>' : ''}</span>
+      </div>
+      <span class="badge ${m.pago?'badge-success':'badge-amber'}">${m.pago?'Pago':'Pagamento pendente'}</span>
+    </div>`).join('');
+
+  const estados = ['montando','aguardando_pagamento','confirmada','competindo','finalizada'];
+  const atual = estados.indexOf(equipe.status);
+  const labelsExib = ['Montando','Aguardando Pagamentos','Confirmada','Competindo','Finalizada'];
+  document.getElementById('team-stepper').innerHTML = estados.map((e,i)=>{
+    const state = i<atual?'done':i===atual?'current':'';
+    return `<div class="step ${state}"><div class="step-dot">${i<atual?'✓':i+1}</div><span class="step-label">${labelsExib[i]}</span></div>${i<estados.length-1?'<div class="step-line '+(i<atual?'done':'')+'"></div>':''}`;
+  }).join('');
+
+  // ações de líder só aparecem para o líder
+  const souLider = equipe.liderId === usuario.id;
+  document.getElementById('bloco-lider').style.display = souLider ? 'block' : 'none';
+  document.getElementById('bloco-convidar-email').style.display = souLider ? 'block' : 'none';
+}
+renderPagina();
+
+function recarregarEquipe(){
+  equipe = arenaLoad('equipes', []).find(e=>e.id===equipe.id);
+  renderPagina();
+}
+
+function convidarPorEmail(){
+  const email = document.getElementById('convite-email').value.trim();
+  if(!email){ return; }
+  document.getElementById('convite-email').value = '';
+  mostrarToast('Convite enviado para ' + email + ' (simulado).');
+}
+function renomearEquipe(){
+  const novoNome = prompt('Novo nome da equipe:', equipe.nome);
+  if(!novoNome || !novoNome.trim()) return;
+  const equipes = arenaLoad('equipes', []);
+  const eq = equipes.find(e=>e.id===equipe.id);
+  eq.nome = novoNome.trim();
+  arenaSave('equipes', equipes);
+  recarregarEquipe();
+  mostrarToast('Nome da equipe atualizado.');
+}
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg || 'Feito.';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function copiarCodigo(){
+  if(!equipe) return;
+  navigator.clipboard && navigator.clipboard.writeText(equipe.codigoConvite);
+  mostrarToast('Código copiado: ' + equipe.codigoConvite);
+}
+function copiarLink(){
+  if(!equipe) return;
+  const link = window.location.origin + window.location.pathname.replace('equipe.html','cadastro.html') + '?convite=' + equipe.codigoConvite;
+  navigator.clipboard && navigator.clipboard.writeText(link);
+  mostrarToast('Link de convite copiado.');
+}
+</script>
+</body>
+</html>

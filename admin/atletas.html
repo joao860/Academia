@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atletas — Admin Crossbox</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      <input type="text" id="busca" placeholder="Buscar atleta..." oninput="renderTabela()" style="background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:8px;padding:9px 14px;color:var(--chalk);width:220px">
+    </div>
+    <div class="content">
+      <div class="card" style="overflow-x:auto">
+        <table class="table">
+          <thead><tr><th>Atleta</th><th>Equipe</th><th>Categoria</th><th>Pagamento</th><th>Conta desde</th></tr></thead>
+          <tbody id="atletas-body"></tbody>
+        </table>
+      </div>
+      <p class="text-faint" id="atletas-vazio" style="display:none;margin-top:16px">Nenhum atleta inscrito ainda — contas de atletas aparecem aqui assim que se cadastrarem pelo site.</p>
+    </div>
+  </div>
+</div>
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/mock-data.js"></script>
+<script src="../assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('admin', 'login.html');
+renderSidebar('admin','atletas');
+
+const usuarios = arenaLoad('usuarios', []);
+renderTopbar('Atletas', usuarios.length + ' conta(s) de atleta cadastrada(s)');
+
+const equipes = arenaLoad('equipes', []);
+let linhas = [];
+equipes.forEach(eq => eq.membros.forEach(m => linhas.push({nome:m.nome, avatar:m.avatar, equipe:eq.nome, categoria:eq.categoria, pago:m.pago})));
+// atletas sem equipe (inscrição individual ou ainda não inscritos em nada)
+const idsComEquipe = new Set();
+equipes.forEach(eq=>eq.membros.forEach(m=>idsComEquipe.add(m.userId)));
+usuarios.filter(u=>!idsComEquipe.has(u.id)).forEach(u=> linhas.push({nome:u.nome, avatar:u.avatar, equipe:'—', categoria:'—', pago:false, criadoEm:u.criadoEm}));
+
+function renderTabela(){
+  const termo = (document.getElementById('busca').value||'').toLowerCase();
+  const filtradas = linhas.filter(l=>l.nome.toLowerCase().includes(termo));
+  document.getElementById('atletas-vazio').style.display = linhas.length ? 'none' : 'block';
+  document.getElementById('atletas-body').innerHTML = filtradas.map(l=>`
+    <tr>
+      <td class="flex items-center gap-12"><div class="avatar" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700">${l.avatar}</div>${l.nome}</td>
+      <td>${l.equipe}</td>
+      <td><span class="badge badge-muted">${l.categoria}</span></td>
+      <td><span class="badge ${l.pago?'badge-success':'badge-amber'}">${l.pago?'Pago':'Pendente'}</span></td>
+      <td class="text-faint mono" style="font-size:12.5px">${l.criadoEm||'—'}</td>
+    </tr>`).join('');
+}
+renderTabela();
+</script>
+</body>
+</html>

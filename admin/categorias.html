@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Categorias — Admin Crossbox</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal-cat').classList.add('open')">+ Nova categoria</button>
+    </div>
+    <div class="content">
+      <div class="grid g-3" id="cat-grid"></div>
+      <p class="text-faint" id="cat-vazio" style="display:none">Nenhuma categoria cadastrada ainda. Crie a primeira acima, ou pelo assistente de criação de campeonato.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-cat">
+  <div class="modal">
+    <h3 class="h-display" style="font-size:20px;margin-bottom:18px">Nova categoria</h3>
+    <div class="field"><label>Nome</label><input type="text" id="m-nome" placeholder="Ex: Scale RX"></div>
+    <div class="field"><label>Descrição</label><textarea rows="2" id="m-desc" placeholder="Descreva o nível e regras da categoria"></textarea></div>
+    <div class="grid g-2">
+      <div class="field"><label>Mín. atletas</label><input type="number" id="m-min" value="1"></div>
+      <div class="field"><label>Máx. atletas</label><input type="number" id="m-max" value="3"></div>
+    </div>
+    <div class="flex gap-12"><button class="btn btn-ghost" onclick="document.getElementById('modal-cat').classList.remove('open')">Cancelar</button><button class="btn btn-primary" style="flex:1" onclick="salvarCategoria()">Salvar categoria</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"><span>✅</span><span id="toast-msg"></span></div>
+
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/mock-data.js"></script>
+<script src="../assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('admin', 'login.html');
+renderSidebar('admin','categorias');
+const campeonato = arenaCampeonatoAtivo();
+renderTopbar('Categorias', campeonato ? campeonato.nome : 'Nenhum campeonato ativo');
+
+const CORES = ['#196913','#1D6FD1','#D97706','#8B5CF6','#DC2626'];
+
+function renderCats(){
+  const cats = arenaListar('categorias');
+  document.getElementById('cat-vazio').style.display = cats.length ? 'none' : 'block';
+  document.getElementById('cat-grid').innerHTML = cats.map((c,i)=>`
+    <div class="card" style="border-top:3px solid ${c.cor||CORES[i%CORES.length]}">
+      <div class="flex justify-between items-center" style="margin-bottom:10px">
+        <h3 style="font-family:var(--font-display);font-size:19px;text-transform:uppercase;color:${c.cor||CORES[i%CORES.length]}">${c.nome}</h3>
+        <span class="mono text-faint" style="font-size:12px">${c.inscritos||0} inscritos</span>
+      </div>
+      <p class="text-dim" style="font-size:13.5px;margin-bottom:14px">${c.descricao||'Sem descrição.'}</p>
+      <div class="flex justify-between items-center">
+        <span class="text-faint mono" style="font-size:12px">${c.minAtletas}–${c.maxAtletas} atletas</span>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removerCategoria('${c.id}')">Remover</button>
+      </div>
+    </div>`).join('');
+}
+function salvarCategoria(){
+  const nome = document.getElementById('m-nome').value.trim(); if(!nome) return;
+  const cor = CORES[arenaListar('categorias').length % CORES.length];
+  arenaAdicionar('categorias', {
+    nome, descricao:document.getElementById('m-desc').value||'Nova categoria configurada pelo administrador.',
+    minAtletas:+document.getElementById('m-min').value, maxAtletas:+document.getElementById('m-max').value,
+    cor, inscritos:0
+  }, 'cat');
+  document.getElementById('modal-cat').classList.remove('open');
+  document.getElementById('m-nome').value=''; document.getElementById('m-desc').value='';
+  renderCats();
+  mostrarToast('Categoria "'+nome+'" criada — já aparece na landing page e no cadastro de atletas.');
+}
+function removerCategoria(id){ arenaRemover('categorias', id); renderCats(); }
+function mostrarToast(msg){ const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+renderCats();
+</script>
+</body>
+</html>

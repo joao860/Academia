@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aprovar resultados — Admin Crossbox</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar"><div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div></div>
+    <div class="content">
+      <p class="text-dim" style="margin-bottom:22px;max-width:560px">Resultados enviados pelos juízes só entram no ranking depois de aprovados aqui. Você pode aprovar ou solicitar correção.</p>
+      <div id="resultados-list"></div>
+      <p class="text-faint" id="resultados-vazio" style="display:none">Nenhum resultado enviado ainda.</p>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"><span>✅</span><span id="toast-msg"></span></div>
+
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/mock-data.js"></script>
+<script src="../assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('admin', 'login.html');
+renderSidebar('admin','resultados');
+
+function render(){
+  const pendentes = arenaLoad('resultados_pendentes', []);
+  renderTopbar('Aprovar resultados', pendentes.filter(p=>p.status==='pendente').length + ' pendente(s)');
+  document.getElementById('resultados-vazio').style.display = pendentes.length ? 'none' : 'block';
+  document.getElementById('resultados-list').innerHTML = pendentes.map(p=>`
+    <div class="card flex items-center justify-between" style="margin-bottom:14px;flex-wrap:wrap;gap:14px">
+      <div class="flex items-center gap-24" style="flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700">${p.equipeNome} <span class="text-faint" style="font-weight:400">· ${p.categoria||''}</span></div>
+          <div class="text-faint" style="font-size:12.5px">enviado por ${p.juizNome}</div>
+        </div>
+        <div class="mono" style="font-size:18px;font-weight:700;color:var(--flame-hi)">${p.tempo || p.repeticoes || '—'}</div>
+      </div>
+      <div>
+        ${p.status==='pendente' ? `
+          <span class="badge badge-amber" style="margin-right:10px">Pendente</span>
+          <button class="btn btn-ghost btn-sm" onclick="corrigir('${p.id}')">Solicitar correção</button>
+          <button class="btn btn-primary btn-sm" onclick="aprovar('${p.id}')">Aprovar</button>
+        ` : p.status==='aprovado' ? `<span class="badge badge-success">Aprovado — ranking atualizado</span>` : `<span class="badge" style="color:var(--danger);border-color:var(--danger)">Correção solicitada</span>`}
+      </div>
+    </div>`).join('');
+}
+function aprovar(id){
+  const pendentes = arenaLoad('resultados_pendentes', []);
+  const p = pendentes.find(x=>x.id===id);
+  p.status = 'aprovado';
+  arenaSave('resultados_pendentes', pendentes);
+
+  // atualiza (ou cria) a linha do ranking para esta equipe
+  const ranking = arenaLoad('ranking', []);
+  let linha = ranking.find(r=>r.equipe===p.equipeNome);
+  if(!linha){
+    linha = { equipe:p.equipeNome, categoria:p.categoria, pontos:0 };
+    ranking.push(linha);
+  }
+  linha.pontos = (linha.pontos||0) + 100; // pontuação simplificada por resultado aprovado
+  ranking.sort((a,b)=>b.pontos-a.pontos).forEach((r,i)=>r.pos=i+1);
+  arenaSave('ranking', ranking);
+
+  render();
+  mostrarToast('Resultado aprovado. Ranking recalculado automaticamente.');
+}
+function corrigir(id){
+  const pendentes = arenaLoad('resultados_pendentes', []);
+  pendentes.find(x=>x.id===id).status='correcao';
+  arenaSave('resultados_pendentes', pendentes);
+  render();
+  mostrarToast('Correção solicitada ao juiz responsável.');
+}
+function mostrarToast(msg){ const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+render();
+</script>
+</body>
+</html>

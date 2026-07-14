@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juízes — Admin Crossbox</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div>
+      <div class="flex gap-8">
+        <button class="btn btn-ghost btn-sm" onclick="distribuirAutomatico()">Distribuir automaticamente</button>
+        <button class="btn btn-primary btn-sm" onclick="abrirModalNovo()">+ Novo juiz</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="grid g-3" id="juizes-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-j">
+  <div class="modal">
+    <h3 class="h-display" style="font-size:20px;margin-bottom:18px">Novo juiz</h3>
+    <div class="field"><label>Nome</label><input type="text" id="m-nome" placeholder="Nome completo"></div>
+    <div class="field"><label>E-mail</label><input type="email" id="m-email" placeholder="email@crossbox.com"></div>
+    <div class="field"><label>Senha de acesso</label><input type="text" id="m-senha" placeholder="Ex: 12345678"></div>
+    <div class="flex gap-12"><button class="btn btn-ghost" onclick="document.getElementById('modal-j').classList.remove('open')">Cancelar</button><button class="btn btn-primary" style="flex:1" onclick="salvarJuiz()">Salvar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-atrib">
+  <div class="modal">
+    <h3 class="h-display" style="font-size:20px;margin-bottom:6px">Atribuir equipes</h3>
+    <p class="text-dim" style="font-size:13px;margin-bottom:16px" id="atrib-juiz-nome"></p>
+    <div class="field"><label>Equipes</label>
+      <div class="flex" style="flex-wrap:wrap;gap:8px" id="atrib-equipes-list"></div>
+      <span class="field-hint">Só as equipes selecionadas vão aparecer para este juiz.</span>
+    </div>
+    <div class="flex gap-12"><button class="btn btn-ghost" onclick="document.getElementById('modal-atrib').classList.remove('open')">Cancelar</button><button class="btn btn-primary" style="flex:1" onclick="salvarAtribuicao()">Salvar atribuição</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"><span>✅</span><span id="toast-msg"></span></div>
+
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/mock-data.js"></script>
+<script src="../assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('admin', 'login.html');
+renderSidebar('admin','juizes');
+renderTopbar('Juízes', 'Gerencie o corpo de arbitragem e a distribuição de equipes');
+
+let juizEmEdicaoId = null;
+let equipesSelecionadas = new Set();
+
+function renderJuizes(){
+  const juizes = arenaLoad('juizes', []);
+  const equipes = arenaLoad('equipes', []);
+  document.getElementById('juizes-grid').innerHTML = juizes.map(j=>{
+    const minhas = equipes.filter(e=>(j.equipesIds||[]).includes(e.id));
+    return `<div class="card">
+      <div class="flex items-center gap-12" style="margin-bottom:14px">
+        <div class="avatar" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700">${j.avatar}</div>
+        <div><strong>${j.nome}</strong><div class="text-faint" style="font-size:12px">${j.email}</div></div>
+      </div>
+      <div class="text-faint" style="font-size:11.5px;margin-bottom:6px">Equipes atribuídas</div>
+      <div class="flex" style="flex-wrap:wrap;gap:6px;margin-bottom:14px">${minhas.length ? minhas.map(e=>`<span class="badge badge-muted">${e.nome}</span>`).join('') : '<span class="text-faint" style="font-size:12px">Nenhuma ainda</span>'}</div>
+      <div class="flex gap-8">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="abrirModalAtribuir('${j.id}')">Atribuir equipes</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removerJuiz('${j.id}')">Remover</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalNovo(){
+  document.getElementById('m-nome').value=''; document.getElementById('m-email').value=''; document.getElementById('m-senha').value='';
+  document.getElementById('modal-j').classList.add('open');
+}
+function salvarJuiz(){
+  const nome = document.getElementById('m-nome').value.trim(); if(!nome) return;
+  const juizes = arenaLoad('juizes', []);
+  juizes.push({ id:arenaUid('juiz'), nome, email:document.getElementById('m-email').value.trim(), senha:document.getElementById('m-senha').value||'12345678', avatar:arenaIniciais(nome), equipesIds:[] });
+  arenaSave('juizes', juizes);
+  document.getElementById('modal-j').classList.remove('open');
+  renderJuizes();
+  mostrarToast('Juiz "'+nome+'" cadastrado — já pode fazer login com o e-mail e senha definidos.');
+}
+function removerJuiz(id){
+  arenaSave('juizes', arenaLoad('juizes', []).filter(j=>j.id!==id));
+  renderJuizes();
+}
+
+function abrirModalAtribuir(juizId){
+  const juiz = arenaLoad('juizes', []).find(j=>j.id===juizId);
+  juizEmEdicaoId = juizId;
+  equipesSelecionadas = new Set(juiz.equipesIds || []);
+  document.getElementById('atrib-juiz-nome').textContent = juiz.nome;
+  renderEquipesCheck();
+  document.getElementById('modal-atrib').classList.add('open');
+}
+function renderEquipesCheck(){
+  const equipes = arenaLoad('equipes', []);
+  document.getElementById('atrib-equipes-list').innerHTML = equipes.length ? equipes.map(e=>`
+    <div class="chip2 ${equipesSelecionadas.has(e.id)?'sel':''}" onclick="toggleEq('${e.id}',this)">${e.nome}</div>`).join('')
+    : '<span class="text-faint" style="font-size:12.5px">Nenhuma equipe inscrita ainda.</span>';
+}
+function toggleEq(id, el){ equipesSelecionadas.has(id)?equipesSelecionadas.delete(id):equipesSelecionadas.add(id); el.classList.toggle('sel'); }
+function salvarAtribuicao(){
+  const juizes = arenaLoad('juizes', []);
+  const juiz = juizes.find(j=>j.id===juizEmEdicaoId);
+  juiz.equipesIds = [...equipesSelecionadas];
+  arenaSave('juizes', juizes);
+  document.getElementById('modal-atrib').classList.remove('open');
+  renderJuizes();
+  mostrarToast('Equipes atribuídas a ' + juiz.nome + '.');
+}
+function distribuirAutomatico(){
+  const juizes = arenaLoad('juizes', []);
+  const equipes = arenaLoad('equipes', []);
+  if(!juizes.length || !equipes.length){ mostrarToast('Cadastre juízes e tenha equipes inscritas antes.'); return; }
+  juizes.forEach(j=>j.equipesIds=[]);
+  equipes.forEach((eq,i)=> juizes[i % juizes.length].equipesIds.push(eq.id));
+  arenaSave('juizes', juizes);
+  renderJuizes();
+  mostrarToast('Equipes redistribuídas automaticamente entre os juízes.');
+}
+function mostrarToast(msg){ const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+renderJuizes();
+</script>
+<style>.chip2{background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:100px;padding:7px 12px;font-size:12.5px;cursor:pointer;}.chip2.sel{border-color:var(--flame);background:rgba(var(--flame-rgb),.1);color:var(--flame-hi);}</style>
+</body>
+</html>

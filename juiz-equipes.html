@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minhas equipes — Painel do juiz</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar"><div><div class="topbar-title" style="font-weight:700;font-size:16px"></div><div class="topbar-subtitle text-faint" style="font-size:12.5px"></div></div></div>
+    <div class="content">
+      <p class="text-dim" style="margin-bottom:22px;max-width:520px">Você só visualiza as equipes atribuídas a você pelo administrador — nenhuma informação de outras equipes aparece aqui.</p>
+      <div class="grid g-3" id="minhas-equipes"></div>
+      <p class="text-faint" id="sem-equipes" style="display:none">Nenhuma equipe atribuída a você ainda. Assim que o administrador te atribuir uma equipe, ela aparece aqui.</p>
+    </div>
+  </div>
+</div>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/mock-data.js"></script>
+<script src="assets/js/shell.js"></script>
+<script>
+arenaExigirLogin('juiz', 'juiz-login.html');
+const juiz = arenaUsuarioAtual();
+renderSidebar('juiz','equipes');
+renderTopbar('Minhas equipes','Equipes atribuídas a você nesta edição');
+
+const todasEquipes = arenaLoad('equipes', []);
+const minhas = todasEquipes.filter(e=>(juiz.equipesIds||[]).includes(e.id));
+
+if(!minhas.length){
+  document.getElementById('sem-equipes').style.display = 'block';
+} else {
+  document.getElementById('minhas-equipes').innerHTML = minhas.map(eq=>`
+    <div class="card">
+      <div class="flex justify-between items-center" style="margin-bottom:10px">
+        <h3 class="h-display" style="font-size:18px">${eq.nome}</h3>
+        <span class="badge badge-muted">${eq.categoria}</span>
+      </div>
+      <div class="avatar-stack" style="margin-bottom:14px">${eq.membros.map(m=>`<div class="avatar" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700">${m.avatar}</div>`).join('')}</div>
+      <a href="juiz-dashboard.html?equipe=${eq.id}" class="btn btn-ghost btn-sm btn-block">Ir para pontuação</a>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
