@@ -13,7 +13,7 @@
     <div class="content">
       <div class="card" style="margin-bottom:24px">
         <table class="table">
-          <thead><tr><th>Descrição</th><th>Data</th><th>Valor</th><th>Status</th></tr></thead>
+          <thead><tr><th>Descrição</th><th>Data</th><th>Valor</th><th>Status</th><th></th></tr></thead>
           <tbody id="pagamentos-body"></tbody>
         </table>
       </div>
@@ -36,14 +36,34 @@ renderTopbar('Pagamentos','Histórico de cobranças da sua conta');
 const body = document.getElementById('pagamentos-body');
 if(equipe && campeonato){
   const meuRegistro = equipe.membros.find(m=>m.userId===usuario.id);
+  const pago = meuRegistro && meuRegistro.pago;
   body.innerHTML = `<tr>
     <td>Inscrição — ${campeonato.nome} (${equipe.categoria})</td>
     <td class="mono">${usuario.criadoEm||'—'}</td>
     <td class="mono">—</td>
-    <td><span class="badge ${meuRegistro && meuRegistro.pago ? 'badge-success' : 'badge-amber'}">${meuRegistro && meuRegistro.pago ? 'Pago' : 'Pendente'}</span></td>
+    <td><span class="badge ${pago ? 'badge-success' : 'badge-amber'}">${pago ? 'Pago' : 'Pendente'}</span></td>
+    <td>${pago ? '' : `<button class="btn btn-primary btn-sm" onclick="pagarAgoraEquipe()">Pagar agora</button>`}</td>
+  </tr>`;
+} else if(usuario.inscricaoIndividual){
+  const insc = usuario.inscricaoIndividual;
+  body.innerHTML = `<tr>
+    <td>Inscrição individual — ${insc.campeonato||''} (${insc.categoria})</td>
+    <td class="mono">${usuario.criadoEm||'—'}</td>
+    <td class="mono">—</td>
+    <td><span class="badge ${insc.pago ? 'badge-success' : 'badge-amber'}">${insc.pago ? 'Pago' : 'Pendente'}</span></td>
+    <td>${insc.pago ? '' : `<button class="btn btn-primary btn-sm" onclick="pagarAgoraIndividual()">Pagar agora</button>`}</td>
   </tr>`;
 } else {
-  body.innerHTML = `<tr><td colspan="4" class="text-faint">Nenhuma cobrança ainda.</td></tr>`;
+  body.innerHTML = `<tr><td colspan="5" class="text-faint">Nenhuma cobrança ainda.</td></tr>`;
+}
+
+function pagarAgoraEquipe(){
+  arenaSave('ultima_inscricao', { tipo:'equipe', categoria:equipe.categoria, equipeId:equipe.id, valor:'—' });
+  window.location.href = 'checkout.html';
+}
+function pagarAgoraIndividual(){
+  arenaSave('ultima_inscricao', { tipo:'individual', categoria:usuario.inscricaoIndividual.categoria, equipeId:null, valor:'—' });
+  window.location.href = 'checkout.html';
 }
 </script>
 </body>

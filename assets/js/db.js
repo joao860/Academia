@@ -334,6 +334,13 @@ function arenaEnviarResultado(dados){
   return registro;
 }
 
+function arenaMarcarPagoIndividual(userId){
+  const usuarios = arenaLoad('usuarios', []);
+  const u = usuarios.find(u=>u.id===userId);
+  if(u && u.inscricaoIndividual){ u.inscricaoIndividual.pago = true; arenaSave('usuarios', usuarios); }
+  return u;
+}
+
 /* ---------------- campeonato ativo ---------------- */
 /* Só existe 1 campeonato ativo por vez (regra do MVP). Enquanto o admin
    não publicar nenhum, isto retorna null — e as telas devem mostrar um

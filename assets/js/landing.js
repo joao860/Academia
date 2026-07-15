@@ -161,10 +161,18 @@ function preencherEstatico(){
   // galeria
   const galWrap = $('#galeria-grid');
   if(galWrap){
-    galWrap.innerHTML = GALERIA.length ? GALERIA.map((g,i)=>`
-      <div class="skeleton-img" style="aspect-ratio:${i%3===0?'4/5':'1/1'};display:flex;align-items:flex-end;padding:14px;">
-        <span class="mono text-faint" style="font-size:11px">${g.legenda || g}</span>
-      </div>`).join('') : '<p class="text-faint" style="grid-column:1/-1">Galeria em breve.</p>';
+    galWrap.innerHTML = GALERIA.length ? GALERIA.map((g,i)=>{
+      const item = typeof g === 'object' && g !== null ? g : {legenda:g};
+      const legenda = item.legenda || 'Foto da galeria';
+      const src = item.src || '';
+      return `
+        <div class="skeleton-img" style="aspect-ratio:${i%3===0?'4/5':'1/1'};display:flex;align-items:flex-end;padding:14px;position:relative;overflow:hidden;background:var(--panel-2)">
+          ${src ? `<img src="${src}" alt="${legenda}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : ''}
+          <div style="position:relative;z-index:1;background:rgba(5,10,20,.65);padding:8px 10px;border-radius:999px;max-width:100%">
+            <span class="mono text-faint" style="font-size:11px">${legenda}</span>
+          </div>
+        </div>`;
+    }).join('') : '<p class="text-faint" style="grid-column:1/-1">Galeria em breve.</p>';
   }
 
   // hall da fama

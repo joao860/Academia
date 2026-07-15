@@ -120,6 +120,7 @@
     </div>
     <div class="flex gap-12">
       <button class="btn btn-ghost" onclick="goStep(3)">Voltar</button>
+      <button class="btn btn-ghost" onclick="pagarDepois()">Pagar depois</button>
       <button class="btn btn-primary" style="flex:1" onclick="irParaPagamento()">Ir para pagamento</button>
     </div>
   </section>
@@ -257,6 +258,9 @@ function confirmarEquipeECategoria(){
       equipeAtual = r.equipe;
     }
   }
+  if(tipoInscricao==='individual'){
+    arenaAtualizarPerfil({inscricaoIndividual:{categoria:window.categoriaEscolhida, campeonato:CAMPEONATO_ATUAL.nome, pago:false}});
+  }
   goStep(4);
 }
 
@@ -275,6 +279,13 @@ function renderResumo(){
     : 'R$ ' + (precoEq/partes).toFixed(2).replace('.',',') + ' (sua parte)';
 }
 function irParaPagamento(){
+  // trava explícita: se por qualquer motivo a sessão não estiver ativa,
+  // avisa em vez de simplesmente não navegar (o que pareceria "travado").
+  if(!arenaUsuarioAtual()){
+    alert('Sua sessão expirou. Você será levado para o login — depois volte à sua área e finalize o pagamento em Pagamentos.');
+    window.location.href = 'login.html';
+    return;
+  }
   // deixa registrado o que esta inscrição se refere, pra checkout.html saber
   // o que marcar como pago quando o usuário confirmar.
   arenaSave('ultima_inscricao', {
@@ -284,6 +295,17 @@ function irParaPagamento(){
     valor: document.getElementById('resumo-valor').textContent
   });
   window.location.href = 'checkout.html';
+}
+function pagarDepois(){
+  // guarda a inscrição pendente do mesmo jeito, só que sem ir pro pagamento
+  // agora — o atleta paga depois pela tela de Pagamentos.
+  arenaSave('ultima_inscricao', {
+    tipo: tipoInscricao,
+    categoria: window.categoriaEscolhida,
+    equipeId: equipeAtual ? equipeAtual.id : null,
+    valor: document.getElementById('resumo-valor').textContent
+  });
+  window.location.href = 'login.html';
 }
 </script>
 </body>

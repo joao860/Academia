@@ -22,8 +22,9 @@
 <div class="modal-overlay" id="modal-g">
   <div class="modal">
     <h3 class="h-display" style="font-size:20px;margin-bottom:18px">Adicionar foto</h3>
+    <div class="field"><label for="m-foto">Selecionar imagem</label><input type="file" id="m-foto" accept="image/*"></div>
     <div class="field"><label>Legenda</label><input type="text" id="m-legenda" placeholder="Ex: Pódio 2025"></div>
-    <p class="text-faint" style="font-size:12px;margin:-10px 0 16px">Protótipo: usamos apenas a legenda como placeholder visual, sem upload real de arquivo.</p>
+    <p class="text-faint" style="font-size:12px;margin:-10px 0 16px">A imagem será salva no navegador e exibida na galeria após o upload.</p>
     <div class="flex gap-12"><button class="btn btn-ghost" onclick="document.getElementById('modal-g').classList.remove('open')">Cancelar</button><button class="btn btn-primary" style="flex:1" onclick="salvar()">Adicionar</button></div>
   </div>
 </div>
@@ -38,18 +39,38 @@ renderSidebar('admin','galeria'); renderTopbar('Galeria','Fotos e vídeos do cam
 function render(){
   const galeria = arenaListar('galeria');
   document.getElementById('gal-vazio').style.display = galeria.length ? 'none' : 'block';
-  document.getElementById('gal-grid').innerHTML = galeria.map((g,i)=>`
-    <div class="skeleton-img" style="aspect-ratio:${i%3===0?'4/5':'1/1'};display:flex;align-items:flex-end;padding:12px;position:relative">
-      <span class="mono text-faint" style="font-size:11px">${g.legenda||g}</span>
-      <span style="position:absolute;top:8px;right:10px;cursor:pointer;color:var(--chalk-faint);font-weight:700" onclick="arenaRemover('galeria','${g.id}');render()">✕</span>
-    </div>`).join('');
+  document.getElementById('gal-grid').innerHTML = galeria.map((g,i)=>{
+    const item = typeof g === 'object' && g !== null ? g : {legenda:g};
+    const legenda = item.legenda || 'Foto da galeria';
+    const src = item.src || '';
+    return `
+      <div class="skeleton-img" style="aspect-ratio:${i%3===0?'4/5':'1/1'};display:flex;align-items:flex-end;padding:12px;position:relative;overflow:hidden;background:var(--panel-2)">
+        ${src ? `<img src="${src}" alt="${legenda}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : ''}
+        <div style="position:relative;z-index:1;background:rgba(5,10,20,.65);padding:8px 10px;border-radius:999px;max-width:100%">
+          <span class="mono text-faint" style="font-size:11px">${legenda}</span>
+        </div>
+        <span style="position:absolute;top:8px;right:10px;cursor:pointer;color:var(--chalk-faint);font-weight:700;z-index:2" onclick="arenaRemover('galeria','${item.id}');render()">✕</span>
+      </div>`;
+  }).join('');
 }
 function salvar(){
-  const legenda = document.getElementById('m-legenda').value.trim(); if(!legenda) return;
-  arenaAdicionar('galeria', {legenda}, 'foto');
-  document.getElementById('modal-g').classList.remove('open'); document.getElementById('m-legenda').value='';
-  render();
-  mostrarToast('Foto adicionada à galeria.');
+  const legenda = document.getElementById('m-legenda').value.trim();
+  const fileInput = document.getElementById('m-foto');
+  const file = fileInput.files && fileInput.files[0];
+  if(!file){ mostrarToast('Selecione uma imagem para upload.'); return; }
+  if(!file.type.startsWith('image/')){ mostrarToast('Selecione um arquivo de imagem válido.'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(){
+    arenaAdicionar('galeria', {legenda, src: reader.result, uploadedAt: new Date().toISOString()}, 'foto');
+    document.getElementById('modal-g').classList.remove('open');
+    document.getElementById('m-legenda').value='';
+    fileInput.value='';
+    render();
+    mostrarToast('Foto adicionada à galeria.');
+  };
+  reader.onerror = function(){ mostrarToast('Não foi possível ler a imagem.'); };
+  reader.readAsDataURL(file);
 }
 function mostrarToast(msg){ const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
 render();
